@@ -55,15 +55,15 @@ donate_link = init.donate_link
 g_cur.execute(
     """
     CREATE TABLE IF NOT EXISTS usage (
-        folder TEXT PRIMARY KEY,
-        token_usage INTEGER DEFAULT 0,
-        month TEXT
+        folder_month TEXT PRIMARY KEY,
+        token_usage INTEGER
     )
     """
 )
-g_cur.execute("INSERT OR IGNORE INTO usage (folder, month) VALUES (?, ?)", (path_to_folder, date.month))
+def folder_month(): return path_to_folder+" : "+str(date.today().month) # better use number for month due to different localizations' month names
+g_cur.execute("INSERT OR IGNORE INTO usage (folder_month, token_usage) VALUES (?, ?)", (folder_month(), 0))
 g_conn.commit()
-g_cur.execute("SELECT token_usage WHERE folder=? AND month=?", (path_to_folder, date.month))
+g_cur.execute("SELECT token_usage FROM usage WHERE folder_month=?", (folder_month(),))
 token_usage = g_cur.fetchone()[0]
 
 bot = commands.Bot(command_prefix=command_prefix, intents=intents, help_command=None)
@@ -136,12 +136,14 @@ unseen_msg_ids = {channel_id: set() for channel_id in channel_id_list}
 
 @backoff.on_exception(backoff.expo, openai.error.RateLimitError)
 async def backoff_Completion(**kwargs):
+    global token_usage
     c = await openai.Completion.acreate(**kwargs)
     token_usage += c['usage']['total_tokens']
     return c # for acreate
 
 @backoff.on_exception(backoff.expo, openai.error.RateLimitError)
 async def backoff_ChatCompletion(**kwargs):
+    global token_usage
     cc = await openai.ChatCompletion.acreate(**kwargs)
     token_usage += cc['usage']['total_tokens']
     return cc # for acreate
@@ -385,8 +387,8 @@ async def on_message(message):
     )
     conn.commit()
     g_cur.execute(
-        "INSERT INTO usage (folder, token_usage, month) VALUES (?, ?, ?)", 
-        (path_to_folder, token_usage, date.month)
+        "INSERT OR REPLACE INTO usage (folder_month, token_usage) VALUES (?, ?)", 
+        (folder_month(), token_usage)
     )
     g_conn.commit()
 
@@ -454,12 +456,11 @@ async def db_dump(ctx):
 
 @bot.command(hidden=True)
 @commands.is_owner() # AirDolphin98
-async def usage(ctx):
+async def usage_dump(ctx):
     g_cur.execute("SELECT * FROM usage")
-    tab = ["folder | tokens | month"] + [str(r) for r in g_cur.fetchall()]
-    if not ctx.author.dm_channel: ctx.author.create_dm()
-    await ctx.author.dm_channel.send(tab.join("\n\n"))
-    await ctx.message.delete()
+    tab = ["(folder : month, tokens)"] + [str(r) for r in g_cur.fetchall()]
+    if not ctx.author.dm_channel: await ctx.author.create_dm()
+    await ctx.author.dm_channel.send("\n".join(tab))
 
 
 @bot.event
