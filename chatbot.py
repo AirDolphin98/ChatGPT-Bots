@@ -362,7 +362,7 @@ async def on_message(message):
     if message.author.bot or message.author.system: #if want to allow other bots, exclude self, since self messages added to convo internally
         return
     
-    if (message.author.id, message.guild.id) in blocked_user_set:
+    if (message.author.id, message.guild.id) in blocked_user_set or message.content.startswith(silence_prefix):
         return
     
     # If the message is a command, execute it 
