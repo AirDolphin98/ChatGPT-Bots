@@ -3,3 +3,4 @@ instructions for vps.txt
 **/token.txt
 **/*.db
 **/__pycache__
+.DS_Store
