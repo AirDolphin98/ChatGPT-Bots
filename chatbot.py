@@ -87,13 +87,6 @@ pref_summary_tokens = init.pref_summary_tokens
 
 character_description: Callable[[Any, Any], str] = init.character_description
 context_description: Callable[[Any, Any], str] = init.context_description
-def description(fname):
-    if fname == "character":
-        return character_description
-    elif fname == "context":
-        return context_description
-    else:
-        raise ValueError(fname)
 
 whether_respond = init.whether_respond
 
@@ -102,8 +95,8 @@ default_convos = init.default_convos
 
 # Prompts always presented to the bot by default 
 preconvo = [
-    {'role':'system','content':'character'},
-    {'role':'system','content':'context'},
+    {'role':'system','content':character_description},
+    {'role':'system','content':context_description},
 ]
 
 preconvo_len = len(preconvo)
@@ -113,7 +106,7 @@ def preconvo_fill(bot, channel_id):
     precnv = copy.deepcopy(preconvo)
     channel = bot.get_channel(channel_id)
     for i in range(preconvo_len):
-        precnv[i]['content'] = description(precnv[i]['content'])(bot, channel)
+        precnv[i]['content'] = precnv[i]['content'](bot, channel)
     return precnv
 
 
@@ -230,7 +223,6 @@ async def add_to_convo(message, convo):
             print(line['role'] + ": " + textwrap.wrap(line['content'], width=50)[0])
     print("\n")
 
-#    return convo
 
 # in auto channels, whether or not to respond to a message
 async def should_respond(cnv):
@@ -374,8 +366,7 @@ async def on_message(message):
 
     if channel_id in reply_only_chs and not is_to_bot(message):
         return
-    
-#    await queues[channel_id].put(message)
+
     await add_to_convo(message, convos[channel_id])
     unseen_msg_ids[channel_id].add(message.id)
     await chat(message, channel_id)
