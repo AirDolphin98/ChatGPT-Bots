@@ -258,6 +258,7 @@ async def respond(msg, cnv):
         max_tokens=pref_max_resp_tokens,
         temperature=pref_temp,
     )
+    unfin = cont.choices[0].finish_reason == 'length'
     cont = cont.choices[0].message.content.strip()
     print("\nResponse: ", cont, "\n\n")
 
@@ -283,7 +284,7 @@ async def respond(msg, cnv):
     
     cont = sub_mentions(msg, cont)
 
-    return cont
+    return cont, unfin
 
 
 def is_to_bot(msg):
@@ -297,6 +298,30 @@ def is_to_bot(msg):
     return False
 
 
+async def respond_list(msg, cnv):
+    cnv_q = cnv.copy()
+    continue_cmd = {'role':'system','content':"Continue"}
+    cont_list = []
+    unfinished = True
+    i = 1
+    while unfinished:
+        ith = str(i) if i > 1 else ""
+        print(f"Starting respond {ith} in channel #{msg.channel.name}")
+        t_bef = timeit.default_timer()
+        async with msg.channel.typing():
+            cont, unfinished = await respond(msg, cnv_q)
+        t_aft = timeit.default_timer()
+        print(f"End of respond {ith} in channel #{msg.channel.name}: {t_aft - t_bef} sec")
+        cont_list.append(cont)
+
+        if unfinished:
+            await add_to_convo(cont, cnv_q)
+            cnv_q.append(continue_cmd)
+            i += 1
+
+    return cont_list
+
+
 async def chat(msg, c_id):
     async def respond_wrap(is_reply=False):
         convo = convos[c_id]
@@ -304,21 +329,21 @@ async def chat(msg, c_id):
         unseen_msg_ids[c_id].clear()
         if is_reply:
             convo = await reply_queue.get()
-            for r in reply_posts[c_id]:
-                convo.append(r)
-        print(f"Starting respond in channel #{msg.channel.name}")
-        t_bef = timeit.default_timer()
-        async with msg.channel.typing():
-            cont = await respond(msg, convo)
-        t_aft = timeit.default_timer()
-        print(f"End of respond in channel #{msg.channel.name}: {t_aft - t_bef} sec")
+            for r in reply_posts[c_id]: 
+                await add_to_convo(r, convo)
+
+        cont_list = await respond_list(msg, convo)
+
+        for cont in cont_list:
+            if is_reply:
+                await msg.reply(cont)
+            else:
+                await msg.channel.send(cont)
+            await add_to_convo(cont, convos[c_id])
+            if is_reply:
+                await add_to_convo(cont, reply_posts[c_id])
+
         if is_reply:
-            await msg.reply(cont)
-        else:
-            await msg.channel.send(cont)
-        await add_to_convo(cont, convos[c_id])
-        if is_reply:
-            await add_to_convo(cont, reply_posts[c_id])
             reply_queue.task_done()
             if reply_queue.empty():
                 reply_posts[c_id] = []
@@ -425,6 +450,13 @@ async def reset_convo(ctx):
     )
     conn.commit()
     await ctx.send("Memory of this channel's conversation has been reset!")
+
+
+@bot.hybrid_command(description="Makes the bot post a message that it considers its own")
+@commands.has_role("AI Friend Supporter")
+async def spoof(ctx, message):
+    await ctx.send(message)
+    await add_to_convo(message, convos[ctx.channel.id])
 
 
 @bot.command(hidden=True)
