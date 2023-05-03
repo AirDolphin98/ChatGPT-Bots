@@ -16,6 +16,7 @@ import textwrap
 import re
 import copy
 import backoff
+import functools
 
 
 if len(sys.argv) > 1:
@@ -126,15 +127,27 @@ unseen_msg_ids = {channel_id: set() for channel_id in channel_id_list}
 
 
 ### Main chatbot logic
+def error_handle(func):
+    @functools.wraps(func)
+    async def wrapper(**kwargs):
+        try:
+            res = await func(**kwargs)
+            return res
+        except Exception as err:
+            print("@error_handle decorator caught a blasted error:", err)
+            raise
+    return wrapper
 
-@backoff.on_exception(backoff.expo, openai.error.RateLimitError)
+@error_handle
+@backoff.on_exception(backoff.expo, openai.error.RateLimitError, max_time=300)
 async def backoff_Completion(**kwargs):
     global token_usage
     c = await openai.Completion.acreate(**kwargs)
     token_usage += c['usage']['total_tokens']
     return c # for acreate
 
-@backoff.on_exception(backoff.expo, openai.error.RateLimitError)
+@error_handle
+@backoff.on_exception(backoff.expo, openai.error.RateLimitError, max_time=300)
 async def backoff_ChatCompletion(**kwargs):
     global token_usage
     cc = await openai.ChatCompletion.acreate(**kwargs)
@@ -259,6 +272,7 @@ async def respond(msg, cnv):
         temperature=pref_temp,
     )
     unfin = cont.choices[0].finish_reason == 'length'
+    print(f"\nfinish_reason: '{cont.choices[0].finish_reason}'")
     cont = cont.choices[0].message.content.strip()
     print("\nResponse: ", cont, "\n\n")
 
@@ -392,21 +406,26 @@ async def on_message(message):
     if channel_id in reply_only_chs and not is_to_bot(message):
         return
 
-    await add_to_convo(message, convos[channel_id])
-    unseen_msg_ids[channel_id].add(message.id)
-    await chat(message, channel_id)
+    try:
+        await add_to_convo(message, convos[channel_id])
+        unseen_msg_ids[channel_id].add(message.id)
+        await chat(message, channel_id)
 
-    serialized_convo = json.dumps(convos[channel_id])
-    cur.execute(
-        "INSERT OR REPLACE INTO convos (channel_id, convo) VALUES (?, ?)",
-        (channel_id, serialized_convo)
-    )
-    conn.commit()
-    g_cur.execute(
-        "INSERT OR REPLACE INTO usage (folder_month, token_usage) VALUES (?, ?)", 
-        (folder_month(), token_usage)
-    )
-    g_conn.commit()
+        serialized_convo = json.dumps(convos[channel_id])
+        cur.execute(
+            "INSERT OR REPLACE INTO convos (channel_id, convo) VALUES (?, ?)",
+            (channel_id, serialized_convo)
+        )
+        conn.commit()
+        g_cur.execute(
+            "INSERT OR REPLACE INTO usage (folder_month, token_usage) VALUES (?, ?)", 
+            (folder_month(), token_usage)
+        )
+        g_conn.commit()
+
+    except:
+        message.channel.send(":anger: Experiencing technical difficulties, please try again later :thumbsup:")
+        raise
 
 
 @bot.hybrid_command(description="Lists commands")
