@@ -424,7 +424,7 @@ async def on_message(message):
         g_conn.commit()
 
     except:
-        message.channel.send(":anger: Experiencing technical difficulties, please try again later :thumbsup:")
+        await message.channel.send(":anger: Experiencing technical difficulties, please try again later :thumbsup:")
         raise
 
 
