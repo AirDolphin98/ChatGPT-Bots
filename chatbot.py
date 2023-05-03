@@ -319,13 +319,13 @@ async def respond_list(msg, cnv):
     unfinished = True
     i = 1
     while unfinished:
-        ith = str(i) if i > 1 else ""
-        print(f"Starting respond {ith} in channel #{msg.channel.name}")
+        ith = " #"+str(i) if i > 1 else ""
+        print(f"Starting respond{ith} in channel #{msg.channel.name}")
         t_bef = timeit.default_timer()
         async with msg.channel.typing():
             cont, unfinished = await respond(msg, cnv_q)
         t_aft = timeit.default_timer()
-        print(f"End of respond {ith} in channel #{msg.channel.name}: {t_aft - t_bef} sec")
+        print(f"End of respond{ith} in channel #{msg.channel.name}: {t_aft - t_bef} sec")
         cont_list.append(cont)
 
         if unfinished:
