@@ -53,6 +53,7 @@ spec.loader.exec_module(init)
 command_prefix = init.command_prefix
 silence_prefix = init.silence_prefix
 donate_link = init.donate_link
+subscriber_rolename = getattr(init, 'subscriber_rolename', "AI Friend Supporter") # todo: can do this for every attr
 g_cur.execute(
     """
     CREATE TABLE IF NOT EXISTS usage (
@@ -472,7 +473,7 @@ async def reset_convo(ctx):
 
 
 @bot.hybrid_command(description="Makes the bot post a message that it considers its own")
-@commands.has_role("AI Friend Supporter")
+@commands.has_role(subscriber_rolename)
 async def spoof(ctx, message):
     await ctx.send(message)
     await add_to_convo(message, convos[ctx.channel.id])
