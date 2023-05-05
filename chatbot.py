@@ -373,6 +373,10 @@ async def chat(msg, c_id):
             await msg.channel.send(cont)
         
         # RECURSE if unseen nonempty
+        # recurse regardless of whether resping is from reply or resp
+        # make sure reply too, but redundant from reply cmd don't intercede
+        # i.e. if already responding, do not start a recurse resp
+        # but to be clear, do not nullify the new-started "responding" of another 
 
         responding[c_id] = False
     
