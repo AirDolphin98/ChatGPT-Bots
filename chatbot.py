@@ -125,6 +125,7 @@ conn.commit()
 reply_queues = {channel_id: asyncio.Queue() for channel_id in channel_id_list}
 reply_posts = {channel_id: [] for channel_id in channel_id_list}
 unseen_msg_ids = {channel_id: set() for channel_id in channel_id_list}
+responding = {channel_id: False for channel_id in channel_id_list}
 
 
 ### Main chatbot logic
@@ -228,7 +229,7 @@ async def add_to_convo(message, convo):
     
     while len(convo) >= convo_limit + preconvo_len:
         popped = convo.pop(preconvo_len)
-        print("Popped from convo: ", popped)
+        print("\nPopped from convo: ", popped)
     
     added = {'role':role,'content':formatted_content}
     convo.append(added)
@@ -312,7 +313,7 @@ def is_to_bot(msg):
             return True
     return False
 
-
+# Allow continuation of response when it is cut short
 async def respond_list(msg, cnv):
     cnv_q = cnv.copy()
     continue_cmd = {'role':'system','content':"Continue"}
@@ -338,35 +339,49 @@ async def respond_list(msg, cnv):
 
 
 async def chat(msg, c_id):
-    async def respond_wrap(is_reply=False):
+    async def reply_wrap():
+        responding[c_id] = True
         convo = convos[c_id]
         reply_queue = reply_queues[c_id]
         unseen_msg_ids[c_id].clear()
-        if is_reply:
-            convo = await reply_queue.get()
-            for r in reply_posts[c_id]: 
-                await add_to_convo(r, convo)
+        convo = await reply_queue.get()
+        for r in reply_posts[c_id]: 
+            await add_to_convo(r, convo)
 
         cont_list = await respond_list(msg, convo)
 
         for cont in cont_list:
-            if is_reply:
-                await msg.reply(cont)
-            else:
-                await msg.channel.send(cont)
             await add_to_convo(cont, convos[c_id])
-            if is_reply:
-                await add_to_convo(cont, reply_posts[c_id])
+            await add_to_convo(cont, reply_posts[c_id])
+            await msg.reply(cont)
 
-        if is_reply:
-            reply_queue.task_done()
-            if reply_queue.empty():
-                reply_posts[c_id] = []
+        reply_queue.task_done()
+        if reply_queue.empty():
+            reply_posts[c_id] = []
+            responding[c_id] = False # Will this nullify non-reply awaited resp
+
+    async def respond_wrap():
+        responding[c_id] = True
+        convo = convos[c_id]
+        unseen_msg_ids[c_id].clear()
+
+        # needs should_resp and clear unseen
+        cont_list = await respond_list(msg, convo)
+
+        for cont in cont_list:
+            await add_to_convo(cont, convos[c_id])
+            await msg.channel.send(cont)
+        
+        # RECURSE if unseen nonempty
+
+        responding[c_id] = False
     
     if is_to_bot(msg):
         await reply_queues[c_id].put(convos[c_id].copy())
-        await respond_wrap(True)
+        await reply_wrap()
     else:
+        if responding[c_id]: 
+            return
         print(f"Starting should_respond in channel #{msg.channel.name}")
         t_bef = timeit.default_timer()
         chat_now = await should_respond(convos[c_id])
