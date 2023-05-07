@@ -124,7 +124,7 @@ cur.execute(
 conn.commit()
 reply_queues = {channel_id: asyncio.Queue() for channel_id in channel_id_list}
 reply_posts = {channel_id: [] for channel_id in channel_id_list}
-unseen_msg_ids = {channel_id: set() for channel_id in channel_id_list}
+unseen_msgs = {channel_id: set() for channel_id in channel_id_list}
 responding = {channel_id: False for channel_id in channel_id_list}
 
 
@@ -339,11 +339,17 @@ async def respond_list(msg, cnv):
 
 
 async def chat(msg, c_id):
+    async def respond_recurse(msg_channel):
+        print(f"Starting recursed should_respond in #{msg.channel.name}")
+        t_bef = timeit.default_timer()
+        chat_now = await should_respond(convos[c_id])
+        t_aft = timeit.default_timer()
+        print(f"End of recursed should_respond in #{msg.channel.name}: {t_aft - t_bef} sec")
+
+
     async def reply_wrap():
-        responding[c_id] = True
-        convo = convos[c_id]
         reply_queue = reply_queues[c_id]
-        unseen_msg_ids[c_id].clear()
+        unseen_msgs[c_id].clear()
         convo = await reply_queue.get()
         for r in reply_posts[c_id]: 
             await add_to_convo(r, convo)
@@ -358,48 +364,50 @@ async def chat(msg, c_id):
         reply_queue.task_done()
         if reply_queue.empty():
             reply_posts[c_id] = []
-            responding[c_id] = False # Will this nullify non-reply awaited resp
+            # recurse the normal respond route
+            if unseen_msgs[c_id]:
+                await respond_wrap()
 
     async def respond_wrap():
-        responding[c_id] = True
-        convo = convos[c_id]
-        unseen_msg_ids[c_id].clear()
-
-        # needs should_resp and clear unseen
-        cont_list = await respond_list(msg, convo)
-
-        for cont in cont_list:
-            await add_to_convo(cont, convos[c_id])
-            await msg.channel.send(cont)
-        
-        # RECURSE if unseen nonempty
-        # recurse regardless of whether resping is from reply or resp
-        # make sure reply too, but redundant from reply cmd don't intercede
-        # i.e. if already responding, do not start a recurse resp
-        # but to be clear, do not nullify the new-started "responding" of another 
-
-        responding[c_id] = False
-    
-    if is_to_bot(msg):
-        await reply_queues[c_id].put(convos[c_id].copy())
-        await reply_wrap()
-    else:
-        if responding[c_id]: 
+        if responding[c_id] or not reply_queues[c_id].empty(): 
             return
         print(f"Starting should_respond in channel #{msg.channel.name}")
         t_bef = timeit.default_timer()
         chat_now = await should_respond(convos[c_id])
         t_aft = timeit.default_timer()
         print(f"End of should_respond in channel #{msg.channel.name}: {t_aft - t_bef} sec")
-        
-        if msg.id in unseen_msg_ids[c_id]:
-            if chat_now:
-                await respond_wrap()
-            else:
-                unseen_msg_ids[c_id].remove(msg.id)
-        else:
-            print(f"Skipped a message in #{msg.channel.name}")
 
+        if msg in unseen_msgs[c_id]:
+            if chat_now:
+                responding[c_id] = True
+                unseen_msgs[c_id].clear()
+
+                # needs should_resp and clear unseen
+                cont_list = await respond_list(msg, convos[c_id])
+
+                for cont in cont_list:
+                    await add_to_convo(cont, convos[c_id])
+                    await msg.channel.send(cont)
+                
+                # problem is that in recurse, we don't have a particular msg
+
+                # RECURSE if unseen nonempty
+                # recurse regardless of whether resping is from reply or resp
+                # make sure reply too, but redundant from reply cmd don't intercede
+                # i.e. if already responding, do not start a recurse resp
+                # but to be clear, do not nullify the new-started "responding" of another 
+
+                responding[c_id] = False # what if someone else is responding too?
+            else:
+                unseen_msgs[c_id].remove(msg)
+        else:
+            print(f"Skipped a message in #{msg.channel.name}")        
+    
+    if is_to_bot(msg):
+        await reply_queues[c_id].put(convos[c_id].copy())
+        await reply_wrap()
+    else:
+        await respond_wrap()
 
 
 ### Events and commands
@@ -428,7 +436,7 @@ async def on_message(message):
 
     try:
         await add_to_convo(message, convos[channel_id])
-        unseen_msg_ids[channel_id].add(message.id)
+        unseen_msgs[channel_id].add(message)
         await chat(message, channel_id)
 
         serialized_convo = json.dumps(convos[channel_id])
