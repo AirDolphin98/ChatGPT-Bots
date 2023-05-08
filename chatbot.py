@@ -341,6 +341,10 @@ async def respond_list(msg_channel, cnv):
     return cont_list
 
 
+def print_unseen_msgs(channel):
+    print(f"Unseen msgs at len: {len(unseen_msgs[channel.id])} in #{channel.name}")
+
+
 async def chat(msg, c_id):
     def need_respond():
         return not responding[c_id] and len(unseen_msgs[c_id]) > 0 and reply_queues[c_id].empty()
@@ -359,6 +363,7 @@ async def chat(msg, c_id):
         if chat_now and need_respond():
             responding[c_id] = True
             unseen_msgs[c_id].clear()
+            print_unseen_msgs(msg.channel)
 
             cont_list = await respond_list(msg.channel, convos[c_id])
 
@@ -373,6 +378,7 @@ async def chat(msg, c_id):
 
     async def reply_wrap():
         unseen_msgs[c_id].clear()
+        print_unseen_msgs(msg.channel)
         print(f"Queuing reply in channel #{msg.channel.name}")
         reply_queue = reply_queues[c_id]
         convo = await reply_queue.get()
@@ -410,6 +416,7 @@ async def chat(msg, c_id):
         if chat_now:
             responding[c_id] = True
             unseen_msgs[c_id].clear()
+            print_unseen_msgs(msg.channel)
 
             cont_list = await respond_list(msg.channel, convos[c_id])
 
@@ -419,18 +426,10 @@ async def chat(msg, c_id):
             
             responding[c_id] = False
             await respond_recurse(msg.channel)
-
-            # the weird thing is, it's one responding var, and switching it does for all
-            # make sure reply too, but redundant from reply cmd don't intercede
-            # i.e. if already responding, do not start a recurse resp
-            # but to be clear, do not nullify the new-started "responding" of another 
-
-            # only after response posted, recurse should_respond
-            # don't when any response is being typed
-
-                # what if someone else is responding too?
+            
         else:
-            unseen_msgs[c_id].remove(msg)    
+            unseen_msgs[c_id].remove(msg)
+            print_unseen_msgs(msg.channel)  
     
 
     if is_to_bot(msg):
@@ -467,6 +466,7 @@ async def on_message(message):
     try:
         await add_to_convo(message, convos[channel_id])
         unseen_msgs[channel_id].add(message)
+        print_unseen_msgs(message.channel)
         msgs[channel_id].append(message)
         await chat(message, channel_id)
 
