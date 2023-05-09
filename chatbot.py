@@ -363,6 +363,7 @@ async def chat(msg, c_id):
         if chat_now and need_respond():
             responding[c_id] = True
             unseen_msgs[c_id].clear()
+            print(f"Responding=True recurse in #{msg_channel.name}")
             print_unseen_msgs(msg.channel)
 
             cont_list = await respond_list(msg.channel, convos[c_id])
@@ -372,6 +373,7 @@ async def chat(msg, c_id):
                 await msg.channel.send(cont)
             
             responding[c_id] = False
+            print(f"Responding=False recurse in #{msg_channel.name}")
             await respond_recurse(msg.channel)
         else:
             print(f"Not recursing after all in #{msg_channel.name}")
@@ -416,6 +418,7 @@ async def chat(msg, c_id):
         if chat_now:
             responding[c_id] = True
             unseen_msgs[c_id].clear()
+            print(f"Responding=True wrap in #{msg.channel.name}")
             print_unseen_msgs(msg.channel)
 
             cont_list = await respond_list(msg.channel, convos[c_id])
@@ -425,8 +428,9 @@ async def chat(msg, c_id):
                 await msg.channel.send(cont)
             
             responding[c_id] = False
+            print(f"Responding=False wrap in #{msg.channel.name}")
             await respond_recurse(msg.channel)
-            
+
         else:
             unseen_msgs[c_id].remove(msg)
             print_unseen_msgs(msg.channel)  
