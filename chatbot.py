@@ -128,6 +128,7 @@ reply_queues = {channel_id: asyncio.Queue() for channel_id in channel_id_list}
 reply_posts = {channel_id: [] for channel_id in channel_id_list}
 unseen_msgs = {channel_id: set() for channel_id in channel_id_list}
 responding = {channel_id: False for channel_id in channel_id_list}
+replying = {channel_id: False for channel_id in channel_id_list}
 
 
 ### Main chatbot logic
@@ -347,7 +348,7 @@ def print_unseen_msgs(channel):
 
 async def chat(msg, c_id):
     def need_respond():
-        return not responding[c_id] and len(unseen_msgs[c_id]) > 0 and reply_queues[c_id].empty()
+        return not responding[c_id] and not replying[c_id] and len(unseen_msgs[c_id]) > 0
     
     async def respond_recurse(msg_channel):
         if not need_respond():
@@ -379,6 +380,7 @@ async def chat(msg, c_id):
             print(f"Not recursing after all in #{msg_channel.name}")
 
     async def reply_wrap():
+        replying[c_id] = True
         unseen_msgs[c_id].clear()
         print_unseen_msgs(msg.channel)
         print(f"Queuing reply in channel #{msg.channel.name}")
@@ -397,6 +399,7 @@ async def chat(msg, c_id):
         print(f"End one reply in channel #{msg.channel.name}")
         reply_queue.task_done()
         if reply_queue.empty():
+            replying[c_id] = False
             print(f"Reply queue emptied in channel #{msg.channel.name}")
             reply_posts[c_id] = []
             await respond_recurse(msg.channel)
