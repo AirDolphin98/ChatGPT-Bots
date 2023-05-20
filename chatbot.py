@@ -127,6 +127,7 @@ conn.commit()
 reply_queues = {channel_id: asyncio.Queue() for channel_id in channel_id_list}
 reply_posts = {channel_id: [] for channel_id in channel_id_list}
 unseen_msgs = {channel_id: set() for channel_id in channel_id_list}
+processing_msgs = {channel_id: set() for channel_id in channel_id_list}
 responding = {channel_id: False for channel_id in channel_id_list}
 replying = {channel_id: False for channel_id in channel_id_list}
 
@@ -202,6 +203,7 @@ async def summarize(cont):
     return summary
 
 # function to add new message to convo
+# possible issue at scale: response functions may assume this takes negligible time
 async def add_to_convo(message, convo):
     is_self = isinstance(message, str)
     role = 'assistant' if is_self else 'user'
@@ -232,11 +234,11 @@ async def add_to_convo(message, convo):
     
     while len(convo) >= convo_limit + preconvo_len:
         popped = convo.pop(preconvo_len)
-        print("\nPopped from convo: ", popped)
+        print("\nPopped from convo: " + textwrap.wrap(popped['content'], width=50)[0])
     
     added = {'role':role,'content':formatted_content}
     convo.append(added)
-    print("\nAppended to convo: ", added, "\n")
+    print("Appended to convo: " + textwrap.wrap(added['content'], width=50)[0] + "\n")
     for line in convo:
             print(line['role'] + ": " + textwrap.wrap(line['content'], width=50)[0])
     print("\n")
@@ -345,10 +347,19 @@ async def respond_list(msg_channel, cnv):
 def print_unseen_msgs(channel):
     print(f"Unseen msgs at len: {len(unseen_msgs[channel.id])} in #{channel.name}")
 
+def print_processing_msgs(channel):
+    print(f"Processing msgs at len: {len(processing_msgs[channel.id])} in #{channel.name}")
 
 async def chat(msg, c_id):
     def need_respond():
         return not responding[c_id] and not replying[c_id] and len(unseen_msgs[c_id]) > 0
+    
+    def begin_processing(flag_set):
+        flag_set[c_id] = True
+        processing_msgs[c_id].update(unseen_msgs[c_id])
+        unseen_msgs[c_id].clear()
+        print_unseen_msgs(msg.channel)
+        print_processing_msgs(msg.channel)
     
     async def respond_recurse(msg_channel):
         if not need_respond():
@@ -362,16 +373,20 @@ async def chat(msg, c_id):
         print(f"End of recursed should_respond in #{msg_channel.name}: {t_aft - t_bef} sec")
 
         if chat_now and need_respond():
-            responding[c_id] = True
-            unseen_msgs[c_id].clear()
+            begin_processing(responding)
+            msgs_being_processed = processing_msgs[c_id].copy()
             print(f"Responding=True recurse in #{msg_channel.name}")
-            print_unseen_msgs(msg.channel)
 
-            cont_list = await respond_list(msg.channel, convos[c_id])
+            cont_list = await respond_list(msg_channel, convos[c_id])
 
-            for cont in cont_list:
-                await add_to_convo(cont, convos[c_id])
-                await msg.channel.send(cont)
+            if msgs_being_processed.intersection(processing_msgs[c_id]) and not replying[c_id]:
+                for cont in cont_list:
+                    await add_to_convo(cont, convos[c_id])
+                    await msg_channel.send(cont)
+                processing_msgs[c_id].difference_update(msgs_being_processed)
+                print_processing_msgs(msg_channel)
+            else:
+                print(f"Discarded a recurse response in #{msg.channel.name}")
             
             responding[c_id] = False
             print(f"Responding=False recurse in #{msg_channel.name}")
@@ -380,21 +395,25 @@ async def chat(msg, c_id):
             print(f"Not recursing after all in #{msg_channel.name}")
 
     async def reply_wrap():
-        replying[c_id] = True
-        unseen_msgs[c_id].clear()
-        print_unseen_msgs(msg.channel)
+        begin_processing(replying)
+        msgs_being_processed = processing_msgs[c_id].copy()
         print(f"Queuing reply in channel #{msg.channel.name}")
         reply_queue = reply_queues[c_id]
         convo = await reply_queue.get()
         for r in reply_posts[c_id]: 
+            print('From reply function:')
             await add_to_convo(r, convo)
 
         cont_list = await respond_list(msg.channel, convo)
 
         for cont in cont_list:
+            print('From reply function:')
             await add_to_convo(cont, convos[c_id])
+            print('From reply function:')
             await add_to_convo(cont, reply_posts[c_id])
             await msg.reply(cont)
+        processing_msgs[c_id].difference_update(msgs_being_processed)
+        print_processing_msgs(msg.channel)
 
         print(f"End one reply in channel #{msg.channel.name}")
         reply_queue.task_done()
@@ -419,21 +438,24 @@ async def chat(msg, c_id):
             return
 
         if chat_now:
-            responding[c_id] = True
-            unseen_msgs[c_id].clear()
+            begin_processing(responding)
+            msgs_being_processed = processing_msgs[c_id].copy()
             print(f"Responding=True wrap in #{msg.channel.name}")
-            print_unseen_msgs(msg.channel)
 
             cont_list = await respond_list(msg.channel, convos[c_id])
 
-            for cont in cont_list:
-                await add_to_convo(cont, convos[c_id])
-                await msg.channel.send(cont)
-            
+            if msgs_being_processed.intersection(processing_msgs[c_id]) and not replying[c_id]:
+                for cont in cont_list:
+                    await add_to_convo(cont, convos[c_id])
+                    await msg.channel.send(cont)
+                processing_msgs[c_id].difference_update(msgs_being_processed)
+                print_processing_msgs(msg.channel)
+            else:
+                print(f"Discarded a response in #{msg.channel.name}")
+
             responding[c_id] = False
             print(f"Responding=False wrap in #{msg.channel.name}")
             await respond_recurse(msg.channel)
-
         else:
             unseen_msgs[c_id].remove(msg)
             print_unseen_msgs(msg.channel)  
