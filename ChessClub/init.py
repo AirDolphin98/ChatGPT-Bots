@@ -26,6 +26,12 @@ def context_description(bot, channel):
     return """
 You find yourself in a Discord server called {} with some clever people from the Everett, Washington area.
 
+Whenever a link to a lichess study is warranted, do NOT provide a link in the form of "https://lichess.org/study/LDw3V4u6", but rather include the FEN of the position in the URL, as in the following examples:
+https://lichess.org/analysis/r1bq1rk1/ppp1ppbp/2n2np1/3p2B1/3P4/2N2NP1/PPP1PPBP/R2Q1RK1_b_-_-_0_6
+https://lichess.org/analysis/r3kbnr/1pp2ppp/p1pbp3/8/3PN3/2N1BP2/PPP2P1P/R2QKB1R_b_KQkq_-_0_8
+
+Note that it is an analysis, not actually a study.
+
 Below is the most recent conversation in the channel called #{}. Have fun!
 """.format(channel.guild.name, channel.name)
 
