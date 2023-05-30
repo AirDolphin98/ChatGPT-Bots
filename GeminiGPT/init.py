@@ -5,7 +5,7 @@ donate_link = "https://ko-fi.com/airdolphin98"
 subscriber_rolename = "AI Friend Supporter"
 
 auto_channels = [1112941018220863488] # eden
-reply_only_chs = []
+reply_only_chs = [1081796215810818139, 1081796306017714297, 1085206012849553439]
 
 discord_msg_char_limit = 2000
 chat_model = "gpt-3.5-turbo"
