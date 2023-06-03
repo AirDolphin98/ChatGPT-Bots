@@ -22,6 +22,10 @@ from collections import deque
 
 if len(sys.argv) > 1:
     path_to_folder = sys.argv[1]
+    if path_to_folder.startswith(os.sep):
+        path_to_folder = path_to_folder[len(os.sep):]
+    if path_to_folder.endswith(os.sep):
+        path_to_folder = path_to_folder[:-len(os.sep)]
 else:
     raise ValueError("No folder name argument provided")
 
@@ -292,9 +296,11 @@ async def respond(c_id, cnv):
     def sub_mentions(c_id, text):
         for msg in msgs[c_id].copy():
             for mem in [msg.author] + msg.mentions:
+                print("mentions: ", msg.mentions)
                 m_pattern = rf"@{re.escape(mem.display_name)}"
                 text = re.sub(m_pattern, mem.mention, text)
             for channel in [msg.channel] + msg.channel_mentions:
+                print("ch mentions: ", msg.channel_mentions)
                 c_pattern = rf"#{re.escape(channel.name)}"
                 text = re.sub(c_pattern, channel.mention, text)
         return text
@@ -334,7 +340,8 @@ async def respond_list(msg_channel, cnv):
             cont, unfinished = await respond(msg_channel.id, cnv_q)
         t_aft = timeit.default_timer()
         print(f"End of respond{ith} in channel #{msg_channel.name}: {t_aft - t_bef} sec")
-        cont_list.append(cont)
+        if cont:
+            cont_list.append(cont)
 
         if unfinished:
             await add_to_convo(cont, cnv_q)
@@ -409,8 +416,7 @@ async def chat(msg, c_id):
         for cont in cont_list:
             print('From reply function:')
             await add_to_convo(cont, convos[c_id])
-            print('From reply function:')
-            await add_to_convo(cont, reply_posts[c_id])
+            reply_posts[c_id].append(cont)
             await msg.reply(cont)
         processing_msgs[c_id].difference_update(msgs_being_processed)
         print_processing_msgs(msg.channel)
