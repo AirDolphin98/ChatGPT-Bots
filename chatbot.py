@@ -296,11 +296,9 @@ async def respond(c_id, cnv):
     def sub_mentions(c_id, text):
         for msg in msgs[c_id].copy():
             for mem in [msg.author] + msg.mentions:
-                print("mentions: ", msg.mentions)
                 m_pattern = rf"@{re.escape(mem.display_name)}"
                 text = re.sub(m_pattern, mem.mention, text)
             for channel in [msg.channel] + msg.channel_mentions:
-                print("ch mentions: ", msg.channel_mentions)
                 c_pattern = rf"#{re.escape(channel.name)}"
                 text = re.sub(c_pattern, channel.mention, text)
         return text
