@@ -119,6 +119,8 @@ def preconvo_fill(bot, channel_id):
 
 convos = {channel_id: [] for channel_id in channel_id_list}
 msgs = {channel_id: deque(maxlen=convo_limit) for channel_id in channel_id_list} # only used for sub_mentions()
+# The fact that msgs is not saved to the db means every restart will lose the sub_mentions() functionality for history.
+# However, this functionality does not seem to work well anyway, as ChatGPT makes up random user ids to ping instead. 
 cur.execute(
     """
     CREATE TABLE IF NOT EXISTS convos (
@@ -128,12 +130,16 @@ cur.execute(
     """
 )
 conn.commit()
-reply_queues = {channel_id: asyncio.Queue() for channel_id in channel_id_list}
-reply_posts = {channel_id: [] for channel_id in channel_id_list}
-unseen_msgs = {channel_id: set() for channel_id in channel_id_list}
-processing_msgs = {channel_id: set() for channel_id in channel_id_list}
-responding = {channel_id: False for channel_id in channel_id_list}
-replying = {channel_id: False for channel_id in channel_id_list}
+def init_flag_sets():
+    global reply_queues, reply_posts, unseen_msgs, processing_msgs, responding, replying
+    reply_queues = {channel_id: asyncio.Queue() for channel_id in channel_id_list}
+    reply_posts = {channel_id: [] for channel_id in channel_id_list}
+    unseen_msgs = {channel_id: set() for channel_id in channel_id_list}
+    processing_msgs = {channel_id: set() for channel_id in channel_id_list}
+    responding = {channel_id: False for channel_id in channel_id_list}
+    replying = {channel_id: False for channel_id in channel_id_list}
+
+init_flag_sets()
 
 
 ### Main chatbot logic
@@ -516,6 +522,7 @@ async def on_message(message):
         g_conn.commit()
 
     except:
+        init_flag_sets()
         await message.channel.send(":anger: Experiencing technical difficulties, please try again later :thumbsup:")
         raise
 
