@@ -390,7 +390,8 @@ async def chat(msg, c_id):
 
             cont_list = await respond_list(msg_channel, convos[c_id])
 
-            if msgs_being_processed.intersection(processing_msgs[c_id]) and not replying[c_id]:
+            if (msgs_being_processed.intersection(processing_msgs[c_id]) and not replying[c_id] and
+                bot.user.display_name+": "+cont_list[0] != convos[c_id][-len(cont_list)]['content']): # patch-up to make sure no totally repeated responses
                 for cont in cont_list:
                     await add_to_convo(cont, convos[c_id])
                     await msg_channel.send(cont)
