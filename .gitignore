@@ -4,3 +4,5 @@ instructions for vps.txt
 **/*.db
 **/__pycache__
 .DS_Store
+.env
+GeminiGPT/
