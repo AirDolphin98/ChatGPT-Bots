@@ -1,4 +1,7 @@
 
+# TODO: On guild name, channel, or bot username change: refresh preconvo
+
+
 import openai
 import os
 import sys
@@ -389,7 +392,7 @@ async def chat(msg, c_id):
             print(f"Responding=True recurse in #{msg_channel.name}")
 
             cont_list = await respond_list(msg_channel, convos[c_id])
-
+# Note: consider using chain-of-reasoning to better hint that redundant messages need not be responded to, e.g. ask "is this new info?" before asking "should respond?" again with "given that this is/isn't new info"
             if (msgs_being_processed.intersection(processing_msgs[c_id]) and not replying[c_id] and
                 bot.user.display_name+": "+cont_list[0] != convos[c_id][-len(cont_list)]['content']): # patch-up to make sure no totally repeated responses
                 for cont in cont_list:
