@@ -618,7 +618,7 @@ async def on_member_update(before, after): #for spam accounts joining in Soul Sa
     sus_colors = {797228323192700948, 797227641794461716, 797219806574149672} #Light Slate Blue, Pig Pink, Electric Indigo
     sus_clubs = {822853677093879838, 875840284947259412, 826982479919317013, 812293377956773918, 810822858442801172, 810822856853946408, 810822851748823040, 810822854018203658} # Minecraft, VC, various Sanctums
     bots_channel = after.guild.get_channel(793737732391698453) # bots
-    if sus_colors.issubset(roles_set) and len(sus_clubs.intersection(roles_set)) > 5 and datetime.now(datetime.UTC) - after.joined_at < timedelta(hours=1):
+    if sus_colors.issubset(roles_set) and len(sus_clubs.intersection(roles_set)) > 5 and datetime.now(datetime.timezone.utc) - after.joined_at < timedelta(hours=1):
         await after.ban(reason="detected spam role pattern")
         await bots_channel.send(f"Banned {after.mention} who joined <t:{after.joined_at.timestamp()}:f> for sus roles select pattern :dancer:\nRoles: {' | '.join([r.name for r in after.roles])}")
 
