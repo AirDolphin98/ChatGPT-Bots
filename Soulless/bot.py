@@ -621,7 +621,7 @@ async def on_member_update(before, after): #for spam accounts joining in Soul Sa
     bots_channel = after.guild.get_channel(793737732391698453) # bots
     if sus_colors.issubset(roles_set) and len(sus_clubs.intersection(roles_set)) > 5 and datetime.now(datetime_module.timezone.utc) - after.joined_at < timedelta(hours=1):
         await after.ban(reason="detected spam role pattern")
-        await bots_channel.send(f"Banned {after.mention} who joined <t:{after.joined_at.timestamp()}:f> for sus roles select pattern :dancer:\nRoles: {' | '.join([r.name for r in after.roles])}")
+        await bots_channel.send(f"Banned {after.mention} who joined <t:{round(after.joined_at.timestamp())}:f> for sus roles select pattern :dancer:\nRoles: {' | '.join([r.name for r in after.roles][1:])}")
 
 
 @bot.event
