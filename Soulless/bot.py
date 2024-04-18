@@ -497,9 +497,9 @@ async def on_message(message):
 
     ## anti-spam auto-ban
     prev = last_msgs.get(message.author.id)
-    limit = 4
+    limit = 3
     if prev:
-        if len(message.content) > 4 and message.content == prev[-1].content and channel_id != prev[-1].channel.id: # most logically, should check if ch_id != every in prev
+        if len(message.content) > 4 and message.content == prev[-1].content and all(channel_id != msg.channel.id for msg in prev): 
             prev.append(message)
             if len(prev) >= limit and 793741327874654219 in [r.id for r in message.author.roles]: # Wisp
                 await message.author.ban(reason=f"spammed {limit} times")
