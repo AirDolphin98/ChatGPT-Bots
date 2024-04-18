@@ -504,7 +504,7 @@ async def on_message(message):
             if len(prev) >= limit and 793741327874654219 in [r.id for r in message.author.roles]: # Wisp
                 await message.author.ban(reason=f"spammed {limit} times")
                 bots_channel = message.author.guild.get_channel(793737732391698453) # bots
-                await bots_channel.send(f"Banned {message.author.mention} who joined <t:{round(message.author.joined_at.timestamp())}:f> for spamming {limit} times \nRoles: {' | '.join([r.name for r in message.author.roles][1:])}")
+                await bots_channel.send(f"Banned {message.author.mention} who joined <t:{round(message.author.joined_at.timestamp())}:f> for spamming {limit} times \nRoles: {' | '.join([r.name for r in message.author.roles][1:])}\nMessage: {'`'+message.clean_content+'`'}")
         else:
             last_msgs[message.author.id] = [message]
 
