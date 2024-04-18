@@ -489,9 +489,29 @@ async def chat(msg, c_id):
 
 ### Events and commands
 
+last_msgs = {}
+
 @bot.event
 async def on_message(message):
     channel_id = message.channel.id
+
+    ## anti-spam auto-ban
+    prev = last_msgs.get(message.author.id)
+    limit = 4
+    if prev:
+        if len(message.content) > 4 and message.content == prev[-1].content and channel_id != prev[-1].channel.id: # most logically, should check if ch_id != every in prev
+            prev.append(message)
+            if len(prev) >= limit and 793741327874654219 in [r.id for r in message.author.roles]: # Wisp
+                await message.author.ban(reason=f"spammed {limit} times")
+                bots_channel = message.author.guild.get_channel(793737732391698453) # bots
+                await bots_channel.send(f"Banned {message.author.mention} who joined <t:{round(message.author.joined_at.timestamp())}:f> for spamming {limit} times \nRoles: {' | '.join([r.name for r in message.author.roles][1:])}")
+        else:
+            last_msgs[message.author.id] = [message]
+
+    else:
+        last_msgs[message.author.id] = [message]
+    ##
+
     if channel_id not in channel_id_list:
         return
     
