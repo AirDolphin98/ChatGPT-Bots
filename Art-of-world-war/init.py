@@ -4,7 +4,7 @@ silence_prefix = "//"
 donate_link = "https://ko-fi.com/airdolphin98"
 
 auto_channels = []
-reply_only_chs = [670090775606067227, 945482155037958184, 747948622389182515, 670090977356021780]
+reply_only_chs = [670090775606067227, 670090977356021780, 747948622389182515] # bot-commands, server-commands, political
 
 discord_msg_char_limit = 2000
 chat_model = "gpt-3.5-turbo"
