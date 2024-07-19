@@ -7,11 +7,11 @@ auto_channels = []
 reply_only_chs = [670090775606067227, 670090977356021780, 747948622389182515] # bot-commands, server-commands, political
 
 discord_msg_char_limit = 2000
-chat_model = "gpt-3.5-turbo"
+chat_model = "gpt-4o-mini"
 ques_model = "text-davinci-003"
 pref_temp = 1
 pref_summ_temp = 0.7
-token_limit = 4096 # for gpt-3.5-turbo
+token_limit = 128000 # for gpt-4o-mini
 convo_limit = 10 # in excess of preconvo
 pref_max_resp_tokens = 375
 pref_summary_tokens = 200

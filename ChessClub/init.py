@@ -8,11 +8,11 @@ auto_channels = [1108789877752995841, 1108908755309051994] # ai-chatbot, #slug-c
 reply_only_chs = []
 
 discord_msg_char_limit = 2000
-chat_model = "gpt-3.5-turbo"
+chat_model = "gpt-4o-mini"
 ques_model = "text-davinci-003"
 pref_temp = 1
 pref_summ_temp = 0.7
-token_limit = 4096 # for gpt-3.5-turbo
+token_limit = 128000 # for gpt-4o-mini
 convo_limit = 14 # in excess of preconvo
 pref_max_resp_tokens = 300
 pref_summary_tokens = 100

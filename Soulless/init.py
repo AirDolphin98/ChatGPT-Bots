@@ -8,11 +8,11 @@ auto_channels = [935073825845043251, 1092091357771878453] # ai-lounge, ai-lounge
 reply_only_chs = [793737732391698453, 794981260354125854, 794982796690194462, 794981280768065566, 810818009891209238, 810817926742540288, 810067909429821440, 810005722342752266] # bots, philosophy, psychology, politics, religion, social-science, natural-science, formal-science
 
 discord_msg_char_limit = 2000
-chat_model = "gpt-3.5-turbo"
+chat_model = "gpt-4o-mini"
 ques_model = "text-davinci-003"
 pref_temp = 1
 pref_summ_temp = 0.7
-token_limit = 4096 # for gpt-3.5-turbo
+token_limit = 128000 # for gpt-4o-mini
 convo_limit = 14 # in excess of preconvo
 pref_max_resp_tokens = 300
 pref_summary_tokens = 100
