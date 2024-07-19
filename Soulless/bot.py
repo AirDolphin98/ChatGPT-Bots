@@ -178,7 +178,9 @@ async def backoff_ChatCompletion(**kwargs):
     token_usage += cc['usage']['total_tokens']
     return cc # for acreate
 
-encoding = tiktoken.encoding_for_model(chat_model)
+# Not working for some reason
+# encoding = tiktoken.encoding_for_model(chat_model)
+encoding = tiktoken.get_encoding("o200k_base")
 
 def token_len(text, enc=encoding):
     return len(enc.encode(text))
