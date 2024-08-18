@@ -158,7 +158,7 @@ def error_handle(func):
     return wrapper
 
 @error_handle
-@backoff.on_exception(backoff.expo, openai.error.RateLimitError, max_time=300)
+@backoff.on_exception(backoff.expo, openai.RateLimitError, max_time=300)
 async def backoff_Completion(**kwargs):
     global token_usage
     c = await openai.Completion.acreate(**kwargs)
@@ -166,7 +166,7 @@ async def backoff_Completion(**kwargs):
     return c # for acreate
 
 @error_handle
-@backoff.on_exception(backoff.expo, openai.error.RateLimitError, max_time=300)
+@backoff.on_exception(backoff.expo, openai.RateLimitError, max_time=300)
 async def backoff_ChatCompletion(**kwargs):
     global token_usage
     cc = await openai.ChatCompletion.acreate(**kwargs)
