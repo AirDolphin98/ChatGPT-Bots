@@ -191,14 +191,18 @@ async def add_record(interaction: discord.Interaction, time_added: float, user_i
                 confirm_str += f"Redundant {rank_to_add} rank also removed.\n"
     else:
         user_entries = sorted(cur.fetchall(), key=lambda pair: (height(pair[0]), expiry(pair[0], pair[1])), reverse=True)
+        print(user_entries)
         for rank, s_n in user_entries:
             h_a = height(rank_to_add)
             h = height(rank)
             e_a = expiry(rank_to_add, season_num)
             e = expiry(rank, s_n)
+            print(h_a, h)
+            print(e_a, e)
             if h_a <= h and e_a <= e:
                 if not confirm_str:
                     confirm_str = f"{rank_to_add} rank NOT granted, redundant...\n"
+                print(confirm_str)
                 break  # this is why user_entries is reverse sorted
             elif h_a >= h and e_a >= e:
                 r_id = RANK_ID_DICT[rank]
@@ -213,6 +217,7 @@ async def add_record(interaction: discord.Interaction, time_added: float, user_i
                 if not confirm_str:
                     confirm_str = f"{rank_to_add} rank granted!\n"
                 confirm_str += f"Redundant {rank} rank also removed.\n"
+                print(confirm_str)
             elif h_a > h and e_a < e or h_a < h and e_a > e:
                 await add_role(role_id)
                 if not confirm_str:
@@ -228,9 +233,13 @@ async def add_record(interaction: discord.Interaction, time_added: float, user_i
         r, s_n, n = entry
         info_str += f"\n\nRank: {r}\nExpires: {SEASON_START_WEEKS} weeks after end of S{expiry(r, s_n)}\nNote: {n}"
 
-    await interaction.followup.send(
-        f"{confirm_str}User's ranks recorded:\n\nUser: {interaction.guild.get_member(user_id).display_name}{info_str}",
-        ephemeral=True)
+    server_comm_ch = interaction.guild.get_channel_or_thread(SERVER_COMM_CH)
+    if server_comm_ch:
+        await server_comm_ch.send(f"{confirm_str}User's ranks recorded:\n\nUser: {interaction.guild.get_member(user_id).display_name}{info_str}")
+    else:
+        await interaction.followup.send(
+            f"{confirm_str}User's ranks recorded:\n\nUser: {interaction.guild.get_member(user_id).display_name}{info_str}",
+            ephemeral=True)
 
 
 async def add_records(interaction: discord.Interaction, rows: list[tuple[int, int, int, int, str]], current_season_num: int, end_timestamp: int):
