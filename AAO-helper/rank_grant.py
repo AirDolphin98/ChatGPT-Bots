@@ -148,7 +148,6 @@ async def add_record(interaction: discord.Interaction, time_added: int, user_id:
         "SELECT rank, season_num FROM ranks_added WHERE user_id = ?",
         (user_id,)
     )
-    user_entries = sorted(cur.fetchall(), key=lambda pair: (height(pair[0]), expiry(pair[0], pair[1])), reverse=True)
     rank_to_add = RANK_DICT[role_id]
     user = interaction.guild.get_member(user_id)
 
@@ -161,10 +160,37 @@ async def add_record(interaction: discord.Interaction, time_added: int, user_id:
         conn.commit()
 
     confirm_str = ""
-    if not user_entries:
+    if not cur.fetchall():
         await add_role(role_id)
         confirm_str = f"{rank_to_add} rank granted!\n"
+    elif rank_to_add in RANK1_LIST:
+        cur.execute(
+            "SELECT rank, season_num FROM ranks_added WHERE user_id = ? AND rank = ?",
+            (user_id, rank_to_add)
+        )
+        user_rank_entries = sorted(cur.fetchall(), key=lambda pair: (expiry(pair[0], pair[1])), reverse=True)
+        for s_n in user_rank_entries:
+            e_a = expiry(rank_to_add, season_num)
+            e = expiry(rank_to_add, s_n)
+            if e_a <= e:
+                if not confirm_str:
+                    confirm_str = f"{rank_to_add} rank NOT granted, redundant...\n"
+                break  # this is why user_rank_entries is reverse sorted
+            elif e_a > e:
+                r_id = RANK_ID_DICT[rank_to_add]
+                if user.get_role(r_id):
+                    await user.remove_roles(interaction.guild.get_role(r_id))
+                cur.execute(
+                    "DELETE FROM ranks_added WHERE user_id = ? AND rank = ? AND season_num = ?",
+                    (user_id, rank_to_add, s_n)
+                )
+                conn.commit()
+                await add_role(role_id)
+                if not confirm_str:
+                    confirm_str = f"{rank_to_add} rank granted!\n"
+                confirm_str += f"Redundant {rank_to_add} rank also removed.\n"
     else:
+        user_entries = sorted(cur.fetchall(), key=lambda pair: (height(pair[0]), expiry(pair[0], pair[1])), reverse=True)
         for rank, s_n in user_entries:
             h_a = height(rank_to_add)
             h = height(rank)
@@ -175,7 +201,6 @@ async def add_record(interaction: discord.Interaction, time_added: int, user_id:
                     confirm_str = f"{rank_to_add} rank NOT granted, redundant...\n"
                 break  # this is why user_entries is reverse sorted
             elif h_a >= h and e_a >= e:
-                await add_role(role_id)
                 r_id = RANK_ID_DICT[rank]
                 if user.get_role(r_id):
                     await user.remove_roles(interaction.guild.get_role(r_id))
@@ -184,6 +209,7 @@ async def add_record(interaction: discord.Interaction, time_added: int, user_id:
                     (user_id, rank, s_n)
                 )
                 conn.commit()
+                await add_role(role_id)
                 if not confirm_str:
                     confirm_str = f"{rank_to_add} rank granted!\n"
                 confirm_str += f"Redundant {rank} rank also removed.\n"
@@ -247,8 +273,6 @@ async def add_records(interaction: discord.Interaction, rows: list[tuple[int, in
                 "SELECT rank, season_num FROM ranks_added WHERE user_id = ?",
                 (user_id,)
             )
-            user_entries = sorted(cur.fetchall(), key=lambda pair: (height(pair[0]), expiry(pair[0], pair[1])),
-                                  reverse=True)
 
             async def add_role(r_id):
                 await user.add_roles(interaction.guild.get_role(r_id))
@@ -259,11 +283,41 @@ async def add_records(interaction: discord.Interaction, rows: list[tuple[int, in
                 conn.commit()
 
             row_to_write = [index, user.name, rank_to_add, season_num, note]
-            if not user_entries:
+            if not cur.fetchall():
                 await add_role(role_id)
                 added_ranks.writerow(row_to_write)
                 index += 1
+            elif rank_to_add in RANK1_LIST:
+                cur.execute(
+                    "SELECT rank, season_num FROM ranks_added WHERE user_id = ? AND rank = ?",
+                    (user_id, rank_to_add)
+                )
+                user_rank_entries = sorted(cur.fetchall(), key=lambda pair: (expiry(pair[0], pair[1])), reverse=True)
+                added = False
+                for s_n in user_rank_entries:
+                    e_a = expiry(rank_to_add, season_num)
+                    e = expiry(rank_to_add, s_n)
+                    if e_a <= e:
+                        error_trace.write(row_str + f"{rank_to_add} rank NOT granted, redundant...")
+                        break  # this is why user_rank_entries is reverse sorted
+                    elif e_a > e:
+                        r_id = RANK_ID_DICT[rank_to_add]
+                        if user.get_role(r_id):
+                            await user.remove_roles(interaction.guild.get_role(r_id))
+                        cur.execute(
+                            "DELETE FROM ranks_added WHERE user_id = ? AND rank = ? AND season_num = ?",
+                            (user_id, rank_to_add, s_n)
+                        )
+                        conn.commit()
+                        await add_role(role_id)
+                        if not added:
+                            added_ranks.writerow(row_to_write)
+                            index += 1
+                            added = True
+                        error_trace.write(row_str + f"Redundant {rank_to_add} rank removed because {rank_to_add} rank granted.")
             else:
+                user_entries = sorted(cur.fetchall(), key=lambda pair: (height(pair[0]), expiry(pair[0], pair[1])),
+                                      reverse=True)
                 added = False
                 for rank, s_n in user_entries:
                     h_a = height(rank_to_add)
