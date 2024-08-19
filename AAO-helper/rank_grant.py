@@ -165,11 +165,11 @@ async def add_record(interaction: discord.Interaction, time_added: int, user_id:
         confirm_str = f"{rank_to_add} rank granted!\n"
     elif rank_to_add in RANK1_LIST:
         cur.execute(
-            "SELECT rank, season_num FROM ranks_added WHERE user_id = ? AND rank = ?",
+            "SELECT season_num FROM ranks_added WHERE user_id = ? AND rank = ?",
             (user_id, rank_to_add)
         )
-        user_rank_entries = sorted(cur.fetchall(), key=lambda pair: (expiry(pair[0], pair[1])), reverse=True)
-        for s_n in user_rank_entries:
+        user_rank_entries = sorted(cur.fetchall(), key=lambda n: expiry(rank_to_add, n[0]), reverse=True)
+        for s_n, in user_rank_entries:
             e_a = expiry(rank_to_add, season_num)
             e = expiry(rank_to_add, s_n)
             if e_a <= e:
@@ -289,12 +289,12 @@ async def add_records(interaction: discord.Interaction, rows: list[tuple[int, in
                 index += 1
             elif rank_to_add in RANK1_LIST:
                 cur.execute(
-                    "SELECT rank, season_num FROM ranks_added WHERE user_id = ? AND rank = ?",
+                    "SELECT season_num FROM ranks_added WHERE user_id = ? AND rank = ?",
                     (user_id, rank_to_add)
                 )
-                user_rank_entries = sorted(cur.fetchall(), key=lambda pair: (expiry(pair[0], pair[1])), reverse=True)
+                user_rank_entries = sorted(cur.fetchall(), key=lambda n: expiry(rank_to_add, n[0]), reverse=True)
                 added = False
-                for s_n in user_rank_entries:
+                for s_n, in user_rank_entries:
                     e_a = expiry(rank_to_add, season_num)
                     e = expiry(rank_to_add, s_n)
                     if e_a <= e:
