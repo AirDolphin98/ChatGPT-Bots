@@ -520,7 +520,7 @@ tree.add_command(grant_top_10)
 @app_commands.checks.has_role(STAFF_ROLE_ID)
 @app_commands.checks.bot_has_permissions(manage_roles=True)
 @app_commands.describe(
-    user_id='@mention or ID of member to grant rank to (for ID, enable developer tools and right-click user -> copy ID)',
+    user_id='@mention (press space at end) or ID of member to grant rank to (for ID, enable developer tools on your account)',
     rank='Rank to grant member',
     season_num='Which number season end (mid-season = previous season)',
     note='Miscellaneous note to attach to this record'
@@ -698,7 +698,7 @@ async def show_user_ranks(interaction: discord.Interaction):
             _, name, rank, num, note = row
             show_ranks.writerow([index, name, rank, num, note])
 
-    await interaction.response.send_message(f"Ranks stored in database, sorted by earliest expiration first. Expiry = Season # + {MEDAL_TIME} if normal, + {TOP_TIME} if Top 10 type.",
+    await interaction.response.send_message(f"Ranks stored in database, sorted by earliest expiration first. Expiry = Season # + {MEDAL_TIME} if normal, + {TOP_TIME} if Top 10 type. Note: mid-season ranks counted as previous season.",
                                             file=discord.File(show_ranks_path), view=ShowRanksView(row_list))
 
 
@@ -800,10 +800,13 @@ async def rank_reaction_add(payload: discord.RawReactionActionEvent):
     if payload.member.get_role(STAFF_ROLE_ID):
         guild = bot.get_guild(payload.guild_id)
         author = guild.get_member(payload.message_author_id)
+        if not author:
+            await guild.get_channel(SERVER_COMM_CH).send("Error: user not in server.")
+            return
         msg = await guild.get_channel(payload.channel_id).fetch_message(payload.message_id)
         rank_react = [react for react in msg.reactions if react.emoji.id == payload.emoji.id][0]
         staff_msg = f"{payload.member.mention} Select a season end for grant rank to user: {author.display_name}"
-        if [user async for user in rank_react.users() if user.get_role(STAFF_ROLE_ID) and user.id != payload.member.id]:
-            staff_msg = f"{payload.member.mention} A Staff member has already reacted to this post for user: {payload.member.display_name}"
+        if [user async for user in rank_react.users() if user and user.get_role(STAFF_ROLE_ID) and user.id != payload.member.id]:
+            staff_msg = f"{payload.member.mention} A Staff member has already reacted to this post for user: {author.display_name}"
         await guild.get_channel(SERVER_COMM_CH).send(content=staff_msg, view=GrantRankView(author, RANK_ID_DICT[
             REACTION_DICT[payload.emoji.id]]))
