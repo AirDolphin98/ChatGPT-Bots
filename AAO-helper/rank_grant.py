@@ -806,7 +806,7 @@ async def rank_reaction_add(payload: discord.RawReactionActionEvent):
         msg = await guild.get_channel(payload.channel_id).fetch_message(payload.message_id)
         rank_react = [react for react in msg.reactions if react.emoji.id == payload.emoji.id][0]
         staff_msg = f"{payload.member.mention} Select a season end for grant rank to user: {author.display_name}"
-        if [user async for user in rank_react.users() if user and user.get_role(STAFF_ROLE_ID) and user.id != payload.member.id]:
+        if [user async for user in rank_react.users() if guild.get_member(user.id) and user.get_role(STAFF_ROLE_ID) and user.id != payload.member.id]:
             staff_msg = f"{payload.member.mention} A Staff member has already reacted to this post for user: {author.display_name}"
         await guild.get_channel(SERVER_COMM_CH).send(content=staff_msg, view=GrantRankView(author, RANK_ID_DICT[
             REACTION_DICT[payload.emoji.id]]))
