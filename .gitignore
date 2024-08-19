@@ -6,3 +6,4 @@ instructions for vps.txt
 .DS_Store
 .env
 GeminiGPT/
+/.venv
