@@ -34,7 +34,7 @@ cur.execute(
 cur.execute(
     """
     CREATE TABLE IF NOT EXISTS ranks_added (
-        time_added INTEGER PRIMARY KEY,
+        time_added REAL PRIMARY KEY,
         user_id INTEGER,
         rank TEXT,
         season_num INTEGER,

@@ -89,7 +89,7 @@ def expiry_back(role_id: int, current_season: int) -> int:
         return current_season - MEDAL_TIME
 
 
-async def delete_rank(guild, time_added: int, user_id: int, rank: str, commits=True):
+async def delete_rank(guild, time_added: float, user_id: int, rank: str, commits=True):
     cur.execute(
         "DELETE FROM ranks_added WHERE time_added = ?",
         (time_added,)
@@ -112,7 +112,7 @@ async def delete_rank(guild, time_added: int, user_id: int, rank: str, commits=T
         await guild.get_channel_or_thread(SERVER_COMM_CH).send(f"ROLE NOT FOUND IN PROGRAM: {rank}")
 
 
-async def add_record(interaction: discord.Interaction, time_added: int, user_id: int, role_id: int, season_num: int,
+async def add_record(interaction: discord.Interaction, time_added: float, user_id: int, role_id: int, season_num: int,
                      note: str):
     await interaction.response.defer()
     cur.execute(
@@ -243,6 +243,7 @@ async def add_records(interaction: discord.Interaction, rows: list[tuple[int, in
         error_trace.write("Failed Adds")
         for row in rows:
             time_added, user_id, role_id, season_num, note = row
+            time_added += 0.0001 * index
             rank_to_add = RANK_DICT[role_id]
             user = interaction.guild.get_member(user_id)
             row_str = f"\n{user.name}, {rank_to_add}, {str(season_num)} -- "
@@ -381,7 +382,7 @@ def season_select_options(season_num: int) -> list[discord.SelectOption]:
 class GrantRankView(discord.ui.View):
     def __init__(self, user: discord.Member, role_id: int) -> None:
         super().__init__()
-        self.time_added = int(datetime.timestamp(datetime.now(timezone.utc)))
+        self.time_added = datetime.timestamp(datetime.now(timezone.utc))
         self.user = user
         cur.execute("SELECT season_num FROM current_season_end")
         current_end = cur.fetchone()
@@ -540,7 +541,7 @@ async def grant_rank(interaction: discord.Interaction, user_id: str, rank: app_c
     if not user:
         await interaction.response.send_message("No user found for user_id", ephemeral=True)
         return
-    time_added = int(datetime.timestamp(datetime.now(timezone.utc)))
+    time_added = datetime.timestamp(datetime.now(timezone.utc))
     await add_record(interaction, time_added, int(u_id), int(rank.value), season_num, note)
 
 
@@ -718,7 +719,7 @@ async def upload_user_ranks(interaction: discord.Interaction, file: discord.Atta
         await interaction.followup.send("No current season end stored yet. Use slash command `/set_season_end`.", ephemeral=True)
         return
     c_num, end_ts = current_end
-    time_added = int(datetime.timestamp(datetime.now(timezone.utc)))
+    time_added = datetime.timestamp(datetime.now(timezone.utc))
     await file.save(upload_ranks_path)
     with open(upload_ranks_path, 'r') as u_r:
         ranks_upload = csv.reader(u_r)
