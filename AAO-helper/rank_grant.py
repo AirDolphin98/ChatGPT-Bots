@@ -148,6 +148,7 @@ async def add_record(interaction: discord.Interaction, time_added: float, user_i
         "SELECT rank, season_num FROM ranks_added WHERE user_id = ?",
         (user_id,)
     )
+    entries = cur.fetchall()
     rank_to_add = RANK_DICT[role_id]
     user = interaction.guild.get_member(user_id)
 
@@ -160,7 +161,7 @@ async def add_record(interaction: discord.Interaction, time_added: float, user_i
         conn.commit()
 
     confirm_str = ""
-    if not cur.fetchall():
+    if not entries:
         await add_role(role_id)
         confirm_str = f"{rank_to_add} rank granted!\n"
     elif rank_to_add in RANK1_LIST:
@@ -168,7 +169,7 @@ async def add_record(interaction: discord.Interaction, time_added: float, user_i
             "SELECT season_num FROM ranks_added WHERE user_id = ? AND rank = ?",
             (user_id, rank_to_add)
         )
-        user_rank_entries = sorted(cur.fetchall(), key=lambda n: expiry(rank_to_add, n[0]), reverse=True)
+        user_rank_entries = sorted(entries, key=lambda n: expiry(rank_to_add, n[0]), reverse=True)
         for s_n, in user_rank_entries:
             e_a = expiry(rank_to_add, season_num)
             e = expiry(rank_to_add, s_n)
@@ -190,19 +191,15 @@ async def add_record(interaction: discord.Interaction, time_added: float, user_i
                     confirm_str = f"{rank_to_add} rank granted!\n"
                 confirm_str += f"Redundant {rank_to_add} rank also removed.\n"
     else:
-        user_entries = sorted(cur.fetchall(), key=lambda pair: (height(pair[0]), expiry(pair[0], pair[1])), reverse=True)
-        print(user_entries)
+        user_entries = sorted(entries, key=lambda pair: (height(pair[0]), expiry(pair[0], pair[1])), reverse=True)
         for rank, s_n in user_entries:
             h_a = height(rank_to_add)
             h = height(rank)
             e_a = expiry(rank_to_add, season_num)
             e = expiry(rank, s_n)
-            print(h_a, h)
-            print(e_a, e)
             if h_a <= h and e_a <= e:
                 if not confirm_str:
                     confirm_str = f"{rank_to_add} rank NOT granted, redundant...\n"
-                print(confirm_str)
                 break  # this is why user_entries is reverse sorted
             elif h_a >= h and e_a >= e:
                 r_id = RANK_ID_DICT[rank]
@@ -217,7 +214,6 @@ async def add_record(interaction: discord.Interaction, time_added: float, user_i
                 if not confirm_str:
                     confirm_str = f"{rank_to_add} rank granted!\n"
                 confirm_str += f"Redundant {rank} rank also removed.\n"
-                print(confirm_str)
             elif h_a > h and e_a < e or h_a < h and e_a > e:
                 await add_role(role_id)
                 if not confirm_str:
@@ -227,9 +223,8 @@ async def add_record(interaction: discord.Interaction, time_added: float, user_i
         "SELECT rank, season_num, note FROM ranks_added WHERE user_id = ?",
         (user_id,)
     )
-    entries = cur.fetchall()
     info_str = ""
-    for entry in entries:
+    for entry in cur.fetchall():
         r, s_n, n = entry
         info_str += f"\n\nRank: {r}\nExpires: {SEASON_START_WEEKS} weeks after end of S{expiry(r, s_n)}\nNote: {n}"
 
@@ -283,6 +278,7 @@ async def add_records(interaction: discord.Interaction, rows: list[tuple[int, in
                 "SELECT rank, season_num FROM ranks_added WHERE user_id = ?",
                 (user_id,)
             )
+            entries = cur.fetchall()
 
             async def add_role(r_id):
                 await user.add_roles(interaction.guild.get_role(r_id))
@@ -293,7 +289,7 @@ async def add_records(interaction: discord.Interaction, rows: list[tuple[int, in
                 conn.commit()
 
             row_to_write = [index, user.name, rank_to_add, season_num, note]
-            if not cur.fetchall():
+            if not entries:
                 await add_role(role_id)
                 added_ranks.writerow(row_to_write)
                 index += 1
@@ -302,7 +298,7 @@ async def add_records(interaction: discord.Interaction, rows: list[tuple[int, in
                     "SELECT season_num FROM ranks_added WHERE user_id = ? AND rank = ?",
                     (user_id, rank_to_add)
                 )
-                user_rank_entries = sorted(cur.fetchall(), key=lambda n: expiry(rank_to_add, n[0]), reverse=True)
+                user_rank_entries = sorted(entries, key=lambda n: expiry(rank_to_add, n[0]), reverse=True)
                 added = False
                 for s_n, in user_rank_entries:
                     e_a = expiry(rank_to_add, season_num)
@@ -326,7 +322,7 @@ async def add_records(interaction: discord.Interaction, rows: list[tuple[int, in
                             added = True
                         error_trace.write(row_str + f"Redundant {rank_to_add} rank removed because {rank_to_add} rank granted.")
             else:
-                user_entries = sorted(cur.fetchall(), key=lambda pair: (height(pair[0]), expiry(pair[0], pair[1])),
+                user_entries = sorted(entries, key=lambda pair: (height(pair[0]), expiry(pair[0], pair[1])),
                                       reverse=True)
                 added = False
                 for rank, s_n in user_entries:
@@ -813,9 +809,11 @@ async def rank_reaction_add(payload: discord.RawReactionActionEvent):
             await guild.get_channel(SERVER_COMM_CH).send("Error: user not in server.")
             return
         msg = await guild.get_channel(payload.channel_id).fetch_message(payload.message_id)
-        rank_react = [react for react in msg.reactions if isinstance(react.emoji, discord.Emoji) and react.emoji.id == payload.emoji.id][0]
-        staff_msg = f"{payload.member.mention} Select a season end for grant rank to user: {author.display_name}"
-        if [user async for user in rank_react.users() if guild.get_member(user.id) and user.get_role(STAFF_ROLE_ID) and user.id != payload.member.id]:
-            staff_msg = f"{payload.member.mention} A Staff member has already reacted to this post for user: {author.display_name}"
-        await guild.get_channel(SERVER_COMM_CH).send(content=staff_msg, view=GrantRankView(author, RANK_ID_DICT[
-            REACTION_DICT[payload.emoji.id]]))
+        rank_react_ls = [react for react in msg.reactions if isinstance(react.emoji, discord.Emoji) and react.emoji.id == payload.emoji.id]
+        if rank_react_ls:
+            rank_react = rank_react_ls[0]
+            staff_msg = f"{payload.member.mention} Select a season end for grant rank to user: {author.display_name}"
+            if [user async for user in rank_react.users() if guild.get_member(user.id) and user.get_role(STAFF_ROLE_ID) and user.id != payload.member.id]:
+                staff_msg = f"{payload.member.mention} A Staff member has already reacted to this post for user: {author.display_name}"
+            await guild.get_channel(SERVER_COMM_CH).send(content=staff_msg, view=GrantRankView(author, RANK_ID_DICT[
+                REACTION_DICT[payload.emoji.id]]))
