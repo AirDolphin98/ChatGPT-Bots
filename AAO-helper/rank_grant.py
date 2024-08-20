@@ -169,7 +169,7 @@ async def add_record(interaction: discord.Interaction, time_added: float, user_i
             "SELECT season_num FROM ranks_added WHERE user_id = ? AND rank = ?",
             (user_id, rank_to_add)
         )
-        user_rank_entries = sorted(entries, key=lambda n: expiry(rank_to_add, n[0]), reverse=True)
+        user_rank_entries = sorted(cur.fetchall(), key=lambda n: expiry(rank_to_add, n[0]), reverse=True)
         for s_n, in user_rank_entries:
             e_a = expiry(rank_to_add, season_num)
             e = expiry(rank_to_add, s_n)
@@ -298,7 +298,7 @@ async def add_records(interaction: discord.Interaction, rows: list[tuple[int, in
                     "SELECT season_num FROM ranks_added WHERE user_id = ? AND rank = ?",
                     (user_id, rank_to_add)
                 )
-                user_rank_entries = sorted(entries, key=lambda n: expiry(rank_to_add, n[0]), reverse=True)
+                user_rank_entries = sorted(cur.fetchall(), key=lambda n: expiry(rank_to_add, n[0]), reverse=True)
                 added = False
                 for s_n, in user_rank_entries:
                     e_a = expiry(rank_to_add, season_num)
