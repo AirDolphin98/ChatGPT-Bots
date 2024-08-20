@@ -193,8 +193,11 @@ async def add_record(interaction: discord.Interaction, time_added: float, user_i
     else:
         user_entries = sorted(entries, key=lambda pair: (height(pair[0]), expiry(pair[0], pair[1])), reverse=True)
         for rank, s_n in user_entries:
-            h_a = height(rank_to_add)
-            h = height(rank)
+            try:
+                h_a = height(rank_to_add)
+                h = height(rank)
+            except ValueError:  # Rank not in RANK_LIST, no need to compare
+                continue
             e_a = expiry(rank_to_add, season_num)
             e = expiry(rank, s_n)
             if h_a <= h and e_a <= e:
@@ -326,8 +329,11 @@ async def add_records(interaction: discord.Interaction, rows: list[tuple[int, in
                                       reverse=True)
                 added = False
                 for rank, s_n in user_entries:
-                    h_a = height(rank_to_add)
-                    h = height(rank)
+                    try:
+                        h_a = height(rank_to_add)
+                        h = height(rank)
+                    except ValueError:  # Rank not in RANK_LIST, no need to compare
+                        continue
                     e_a = expiry(rank_to_add, season_num)
                     e = expiry(rank, s_n)
                     if h_a <= h and e_a <= e:
