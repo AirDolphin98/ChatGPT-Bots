@@ -169,7 +169,7 @@ async def add_record(interaction: discord.Interaction, time_added: float, user_i
             confirm_str = f"{rank_to_add} rank granted!\n"
         else:
             user_rank_entries = sorted(rank1_to_add_entries, key=lambda pair: expiry(rank_to_add, pair[1]), reverse=True)
-            for s_n, in user_rank_entries:
+            for _, s_n in user_rank_entries:
                 e_a = expiry(rank_to_add, season_num)
                 e = expiry(rank_to_add, s_n)
                 if e_a <= e:
@@ -303,7 +303,7 @@ async def add_records(interaction: discord.Interaction, rows: list[tuple[int, in
                 else:
                     user_rank_entries = sorted(rank1_to_add_entries, key=lambda pair: expiry(rank_to_add, pair[1]), reverse=True)
                     added = False
-                    for s_n, in user_rank_entries:
+                    for _, s_n in user_rank_entries:
                         e_a = expiry(rank_to_add, season_num)
                         e = expiry(rank_to_add, s_n)
                         if e_a <= e:
