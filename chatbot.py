@@ -162,7 +162,7 @@ def error_handle(func):
 async def backoff_Completion(**kwargs):
     global token_usage
     c = await openai.AsyncOpenAI().completions.create(**kwargs)
-    token_usage += c['usage']['total_tokens']
+    token_usage += c.usage.total_tokens
     return c # for acreate
 
 @error_handle
@@ -170,7 +170,7 @@ async def backoff_Completion(**kwargs):
 async def backoff_ChatCompletion(**kwargs):
     global token_usage
     cc = await openai.AsyncOpenAI().chat.completions.create(**kwargs)
-    token_usage += cc['usage']['total_tokens']
+    token_usage += cc.usage.total_tokens
     return cc # for acreate
 
 encoding = tiktoken.encoding_for_model(chat_model)
