@@ -63,11 +63,11 @@ async def edit_embed(interaction: discord.Interaction, message: discord.Message)
         return
     else:
         embed = message.embeds[0]
-        title = embed.title
-        description = embed.description
-        footer = embed.footer.text
-        color = f'{embed.color.value:06x}'
-        image = embed.image.url
+        title = embed.title if embed.title else None
+        description = embed.description if embed.description else None
+        footer = embed.footer.text if embed.footer else None
+        color = f'{embed.color.value:06x}' if embed.color else None
+        image = embed.image.url if embed.image else None
         await interaction.response.send_modal(CreateEmbedModal(title="Edit values for embed fields", vals=(title, description, footer, color, image), message=message))
 
 
