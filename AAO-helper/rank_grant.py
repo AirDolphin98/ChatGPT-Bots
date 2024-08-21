@@ -98,7 +98,7 @@ async def delete_rank(guild, time_added: float, user_id: int, rank: str, commits
         conn.commit()  # if, for faster performance in loop
     role = guild.get_role(RANK_ID_DICT[rank])
     user = guild.get_member(user_id)
-    if role:
+    if role and user:
         cur.execute(
             "SELECT * FROM ranks_added WHERE user_id = ? AND rank = ?",
             (user_id, rank)
@@ -827,3 +827,20 @@ async def rank_reaction_add(payload: discord.RawReactionActionEvent):
                 staff_msg = f"{payload.member.mention} A Staff member has already reacted to this post for user: {author.display_name}"
             await guild.get_channel(SERVER_COMM_CH).send(content=staff_msg, view=GrantRankView(author, RANK_ID_DICT[
                 REACTION_DICT[payload.emoji.id]]))
+
+
+async def clean_member_roles(member: discord.Member):
+    if not member.guild.get_member(member.id):  # confirm member has not already left server
+        return
+    cur.execute(
+        "SELECT time_added, rank FROM ranks_added WHERE user_id = ?",
+        (member.id,)
+    )
+    entries = cur.fetchall()
+    roles_to_rm = []
+    for role in member.roles:
+        if role.id in RANK_DICT.keys():
+            rank_entries = [t for t, r in entries if r == RANK_DICT[role.id]]
+            if not rank_entries:  # confirm no basis for role in db
+                roles_to_rm.append(role)
+    await member.remove_roles(*roles_to_rm)

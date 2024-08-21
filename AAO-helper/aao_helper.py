@@ -7,6 +7,7 @@ from typing import Optional
 import re
 import random
 import types
+import asyncio
 import datetime as datetime_module  # stupid aspect of datetime being also an object
 from datetime import datetime, timezone, timedelta
 
@@ -137,6 +138,12 @@ async def on_message_edit(before, after):
 @bot.event
 async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
     await rank_reaction_add(payload)
+
+
+@bot.event
+async def on_member_join(member: discord.Member):
+    await asyncio.sleep(60)
+    await clean_member_roles(member)
 
 
 # Don't know how to make this work, so just put it in on_message
