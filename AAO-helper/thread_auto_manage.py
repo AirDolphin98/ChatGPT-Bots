@@ -17,7 +17,8 @@ async def unarchiver():
         aad = thread.auto_archive_duration
         hist_last = [m async for m in thread.history(limit=1)]
         last_msg = hist_last[0] if hist_last else thread  # depends on both message and thread having created_at
-        if min(datetime.now(timezone.utc) - last_msg.created_at, datetime.now(timezone.utc) - last_shaken.get(thread.id, datetime.min)) > timedelta(minutes=aad):
+        if min(datetime.now(timezone.utc) - last_msg.created_at,
+               datetime.now(timezone.utc) - last_shaken.get(thread.id, datetime.min.replace(tzinfo=timezone.utc))) > timedelta(minutes=aad):
             temp = 4320 if aad == 10080 else 10080
             await thread.edit(auto_archive_duration=temp)
             await thread.edit(auto_archive_duration=aad)
