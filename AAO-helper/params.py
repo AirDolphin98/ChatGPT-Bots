@@ -51,6 +51,16 @@ cur.execute(
     )
     """
 )
+cur.execute("DROP TABLE current_season_end")
+cur.execute(
+    """
+    CREATE TABLE IF NOT EXISTS current_season_end (
+        guild_id INTEGER PRIMARY KEY,
+        season_num INTEGER,
+        end_timestamp REAL
+    )
+    """
+)
 cur.execute(  # currently channel is expected to take a json serialized list of exhibition channel labels
     """
     CREATE TABLE IF NOT EXISTS exhibition_users (

@@ -7,14 +7,21 @@ import datetime as datetime_module  # stupid aspect of datetime being also an ob
 from datetime import datetime, timezone, timedelta
 
 
+last_shaken = {}
+
+
 @tasks.loop(minutes=15.0)
 @app_commands.checks.bot_has_permissions(manage_threads=True)
 async def unarchiver():
     async def shake_thread(thread: discord.Thread):
         aad = thread.auto_archive_duration
-        temp = 4320 if aad == 10080 else 10080
-        await thread.edit(auto_archive_duration=temp)
-        await thread.edit(auto_archive_duration=aad)
+        hist_last = [m async for m in thread.history(limit=1)]
+        last_msg = hist_last[0] if hist_last else thread  # depends on both message and thread having created_at
+        if min(datetime.now(timezone.utc) - last_msg.created_at, datetime.now(timezone.utc) - last_shaken.get(thread.id, datetime.min)) > timedelta(minutes=aad):
+            temp = 4320 if aad == 10080 else 10080
+            await thread.edit(auto_archive_duration=temp)
+            await thread.edit(auto_archive_duration=aad)
+            last_shaken[thread.id] = datetime.now(timezone.utc)
 
     cur.execute("SELECT channelthread_id FROM threads_persist")
     all_threads = [t[0] for t in cur.fetchall()]
@@ -52,20 +59,20 @@ async def auto_unarchive(interaction: discord.Interaction):
         return
 
     cur.execute(
-        "SELECT channelthread_id FROM threads_persist WHERE channelthread_id = (?)",
+        "SELECT * FROM threads_persist WHERE channelthread_id = ?",
         (c_id,)
     )
     if cur.fetchall():
         cur.execute(
-            "DELETE FROM threads_persist WHERE channelthread_id = (?)",
+            "DELETE FROM threads_persist WHERE channelthread_id = ?",
             (c_id,)
         )
         conn.commit()
         await interaction.response.send_message("No longer thread-unarchiving automatically")
     else:
         cur.execute(
-            "INSERT INTO threads_persist (channelthread_id) VALUES (?)",
-            (c_id,)
+            "INSERT INTO threads_persist (channelthread_id, last_active) VALUES ?",
+            (c_id, None)
         )
         conn.commit()
         await interaction.response.send_message("Now thread-unarchiving automatically")
@@ -88,7 +95,8 @@ async def forum_closer():
                 continue
             else:
                 for th in forum.threads:
-                    last_msg = [m async for m in th.history(limit=1)][0]
+                    hist_last = [m async for m in th.history(limit=1)]
+                    last_msg = hist_last[0] if hist_last else th  # depends on both message and thread having created_at
                     if datetime.now(timezone.utc) - last_msg.created_at > timedelta(days=days):
                         if lock:
                             await th.edit(archived=True, locked=True)

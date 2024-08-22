@@ -241,7 +241,7 @@ async def add_record(interaction: discord.Interaction, time_added: float, user_i
             ephemeral=True)
 
 
-async def add_records(interaction: discord.Interaction, rows: list[tuple[int, int, int, int, str]], current_season_num: int, end_timestamp: int):
+async def add_records(interaction: discord.Interaction, rows: list[tuple[int, int, int, int, str]], current_season_num: int, end_timestamp: float):
     index = 0
     with open(show_ranks_path, 'r+') as a_r, open(deleted_ranks_path, 'r+') as error_trace:
         a_r.truncate(0)
@@ -589,7 +589,7 @@ async def set_season_end(interaction: discord.Interaction, season_num: int, end_
     try:
         g_id = interaction.guild_id
         end_datetime = datetime.strptime(end_date_time, TIME_FORMAT).replace(tzinfo=timezone.utc)
-        end_timestamp = int(datetime.timestamp(end_datetime))
+        end_timestamp = datetime.timestamp(end_datetime)
 
         server_comm_ch = interaction.guild.get_channel_or_thread(SERVER_COMM_CH)
         if not server_comm_ch:
@@ -645,7 +645,7 @@ def flip_season(end_ts):
         new_month %= 12
         new_year += 1
     new_dt = c_dt.replace(year=new_year, month=new_month)
-    return int(datetime.timestamp(new_dt))
+    return datetime.timestamp(new_dt)
 
 
 @tasks.loop(minutes=30.0)
