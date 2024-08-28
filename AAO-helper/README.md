@@ -94,19 +94,17 @@ Unless otherwise specified, Staff and only Staff role may use the following comm
 
 9. `/grant_rank` Invoke this anywhere to give a user a rank. This is the only way to grant #1 ranks. @mention or raw User ID may specify the user. Tip: if the member is not visible in the channel, you can get the proper @mention by pressing *space* after typing out @ and the username in full.
 
-10. `User right-click -> Apps -> Bestow Top 10` (context menu command) Counterpart to `On rank react` for Top 10. Tip: first post a Hall of Fame embed with all the @mentions, then right-click the @mentions to bestow Top 10.
+10. `/get_season_end` Any member can invoke this to check the current season end. 
 
-11. `/get_season_end` Any member can invoke this to check the current season end. 
+11. `/set_season_end` Mod or Beamdog role can invoke this to manually set the current season end. There are various checks which can be bypassed with the override option. 
 
-12. `/set_season_end` Mod or Beamdog role can invoke this to manually set the current season end. There are various checks which can be bypassed with the override option. 
+12. `/show_user_ranks` Invoke this to generate a txt file of all the contents of the database in csv format, i.e. all ranks recorded. This view provides a delete button which allows you to manually delete a range of rows in the txt file. As a precaution, only Mod may delete rows older than 24 hours. Deleted rows will be printed back in a txt file in csv format. 
 
-13. `/show_user_ranks` Invoke this to generate a txt file of all the contents of the database in csv format, i.e. all ranks recorded. This view provides a delete button which allows you to manually delete a range of rows in the txt file. As a precaution, only Mod may delete rows older than 24 hours. Deleted rows will be printed back in a txt file in csv format. 
-
-14. `/upload_user_ranks` Invoke this to upload a txt file in csv format of ranks to insert into the database. Useful for re-inserting deleted roles or inserting a lot of users. Names are case-sensitive. Tip: csv format allows you to use commas `,` inside an entry if you surround it with double-quotes `"`, and to use a double-quote if you add an extra double-quote like `""`.
+13. `/upload_user_ranks` Invoke this to upload a txt file in csv format of ranks to insert into the database. Useful for re-inserting deleted roles or inserting a lot of users. Names are case-sensitive. Tip: csv format allows you to use commas `,` inside an entry if you surround it with double-quotes `"`, and to use a double-quote if you add an extra double-quote like `""`.
 
 ## Hall of fame embeds
 
-16. `hall_of_fame` This command group allows Staff to more easily post in hall-of-fame channel. These commands grant Hall of Fame role to all featured players. 
+14. `hall_of_fame` This command group allows Staff to more easily post in hall-of-fame channel. These commands grant Hall of Fame role to all featured players. 
 
     a. `top_10` Posts Top 10 Platinum embed for season end. If not for a just-ended season, it does not auto-grant ranks aside from Hall of Fame. 
 
