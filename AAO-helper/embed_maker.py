@@ -1,10 +1,13 @@
 
 from params import *
 from discord import app_commands
+import datetime as datetime_module  # stupid aspect of datetime being also an object
+from datetime import datetime, timezone, timedelta
 
 
 class CreateEmbedModal(discord.ui.Modal):
     def __init__(self, vals=(None,) * 5, message=None, *args, **kwargs) -> None:
+        kwargs['title'] = "Enter values for embed fields"
         super().__init__(*args, **kwargs)
         self.vals = vals
         self.message = message  # only valid when editing
@@ -35,17 +38,21 @@ class CreateEmbedModal(discord.ui.Modal):
         embed = discord.Embed(title=title, description=description, color=color)
         embed.set_footer(text=footer)
         embed.set_image(url=image)
-        if self.message:
-            await self.message.edit(embed=embed)
-        else:
-            await interaction.channel.send(embed=embed)
+        try:
+            if self.message:
+                await self.message.edit(embed=embed)
+            else:
+                await interaction.channel.send(embed=embed)
+        except discord.errors.HTTPException as e:
+            print("ERROR in embed_maker.py CreateEmbedModal on_submit\n", e)
+            await interaction.followup.send("HTTP error: check image url", ephemeral=True)
 
 
 @tree.command(description="Create and send embed")
 @app_commands.checks.has_role(STAFF_ROLE_ID)
 @app_commands.checks.bot_has_permissions(send_messages=True)
 async def create_embed(interaction: discord.Interaction):
-    await interaction.response.send_modal(CreateEmbedModal(title="Enter values for embed fields"))
+    await interaction.response.send_modal(CreateEmbedModal())
 
 
 @app_commands.checks.has_role(STAFF_ROLE_ID)
@@ -68,7 +75,9 @@ async def edit_embed(interaction: discord.Interaction, message: discord.Message)
         footer = embed.footer.text if embed.footer else None
         color = f'{embed.color.value:06x}' if embed.color else None
         image = embed.image.url if embed.image else None
-        await interaction.response.send_modal(CreateEmbedModal(title="Edit values for embed fields", vals=(title, description, footer, color, image), message=message))
+        await interaction.response.send_modal(CreateEmbedModal(vals=(title, description, footer, color, image), message=message))
+        if datetime.now(timezone.utc) - message.created_at > timedelta(days=1.0):
+            await interaction.guild.get_channel_or_thread(SERVER_COMM_CH).send(f"An embed older than a day was edited: {message.reference.jump_url}")
 
 
 tree.add_command(edit_embed)

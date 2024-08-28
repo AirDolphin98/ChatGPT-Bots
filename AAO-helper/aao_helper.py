@@ -16,6 +16,7 @@ from rank_grant import *
 from embed_maker import *
 from exhibition import *
 from thread_auto_manage import *
+from hall_of_fame import *
 
 
 @tree.command(description="Randomly assign sides for 2-5 players")

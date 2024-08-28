@@ -15,14 +15,16 @@ TOP_TIME = 3  # Number of seasons until Top 10 role expires
 SEASON_END_WEEKS = 5.0  # Weeks before a season ends where it counts as already that season end
 SEASON_START_WEEKS = 5.0  # Weeks after a new season starts where ranks cannot be assigned for the new season
 
-RANK_LIST = ["Top 10", "Platinum", "Gold", "Silver", "Bronze"]  # These must not contain commas for upload_ranks() to work
+RANK_LIST = ["Top 10", "Platinum", "Gold", "Silver", "Bronze", "Wood"]  # These must not contain commas for upload_ranks() to work
 RANK1_LIST = ["#1 Rank Axis", "#1 Rank Allies"]
+REQUEST_RANK_CH = 665017042146951188 #request-rank
 RANK_DICT = {
     733500181601058896: RANK_LIST[0],
     659913624315232276: RANK_LIST[1],
     660255916305940480: RANK_LIST[2],
     660255959117201431: RANK_LIST[3],
     660255996391849985: RANK_LIST[4],
+    660256022450929734: RANK_LIST[5],
     664624127617007618: RANK1_LIST[0],
     664624098311274506: RANK1_LIST[1]
 }
@@ -32,30 +34,34 @@ LEGACY_ID_DICT = {
     RANK1_LIST[1]: 1008643621244895322
 }
 REACTION_DICT = {
-    # <:platinum:667881631473860667><:gold:667881111149477905><:silver:667880684244828201><:bronze:667882292622000158>
+    # <:platinum:667881631473860667><:gold:667881111149477905><:silver:667880684244828201><:bronze:667882292622000158><:wood:667880131595075595>
     667881631473860667: RANK_LIST[1],
     667881111149477905: RANK_LIST[2],
     667880684244828201: RANK_LIST[3],
-    667882292622000158: RANK_LIST[4]
+    667882292622000158: RANK_LIST[4],
+    667880131595075595: RANK_LIST[5]
 }
 """Debugging in A&AO Test Server"""
 if DEBUG:
+    REQUEST_RANK_CH = 864688826005454899 #general
     RANK_DICT = {
         1265216205459951668: RANK_LIST[0],
         943044793074847755: RANK_LIST[1],
         941353136470253638: RANK_LIST[2],
         943044862503186443: RANK_LIST[3],
         1265216424570257488: RANK_LIST[4],
+        1276842768987324457: RANK_LIST[5],
         943969266774978580: RANK1_LIST[0],
         943968858170081301: RANK1_LIST[1]
     }
     LEGACY_ID_DICT = {}
     REACTION_DICT = {
-        # <:platinum:940837874746675211> <:gold:940837874927038504><:silver:940837874851512340><:bronze:940837874948001822>
+        # <:platinum:940837874746675211> <:gold:940837874927038504><:silver:940837874851512340><:bronze:940837874948001822><:wood:940837874834739250>
         940837874746675211: RANK_LIST[1],
         940837874927038504: RANK_LIST[2],
         940837874851512340: RANK_LIST[3],
-        940837874948001822: RANK_LIST[4]
+        940837874948001822: RANK_LIST[4],
+        940837874834739250: RANK_LIST[5]
     }
 """"""
 RANK_ID_DICT = {v: k for k, v in RANK_DICT.items()}
@@ -95,7 +101,7 @@ async def delete_rank(guild, time_added: float, user_id: int, rank: str, commits
         (time_added,)
     )
     if commits:
-        conn.commit()  # if, for faster performance in loop
+        conn.commit()  # conditional, for faster performance in loop
     role = guild.get_role(RANK_ID_DICT[rank])
     user = guild.get_member(user_id)
     if role and user:
@@ -107,7 +113,7 @@ async def delete_rank(guild, time_added: float, user_id: int, rank: str, commits
             await user.remove_roles(role)
         legacy = LEGACY_ID_DICT.get(rank)
         if legacy:
-            await user.add_roles(guild.get_role(legacy), guild.get_role(HOF_ROLE_ID))
+            await user.add_roles(guild.get_role(legacy))
     else:
         await guild.get_channel_or_thread(SERVER_COMM_CH).send(f"ROLE NOT FOUND IN PROGRAM: {rank}")
 
@@ -241,7 +247,7 @@ async def add_record(interaction: discord.Interaction, time_added: float, user_i
             ephemeral=True)
 
 
-async def add_records(interaction: discord.Interaction, rows: list[tuple[int, int, int, int, str]], current_season_num: int, end_timestamp: float):
+async def add_records(interaction: discord.Interaction, rows: list[tuple[float, int, int, int, str]], current_season_num: int, end_timestamp: float):
     index = 0
     with open(show_ranks_path, 'r+') as a_r, open(deleted_ranks_path, 'r+') as error_trace:
         a_r.truncate(0)
@@ -519,45 +525,34 @@ class ShowRanksView(discord.ui.View):
 # Commands
 
 
-@app_commands.checks.has_role(STAFF_ROLE_ID)
-@app_commands.default_permissions(manage_roles=True)
-@app_commands.checks.bot_has_permissions(manage_roles=True)
-@app_commands.context_menu(name="Bestow Top 10")
-async def grant_top_10(interaction: discord.Interaction, user: discord.Member):
-    await interaction.response.send_message(view=GrantRankView(user, RANK_ID_DICT[RANK_LIST[0]]), ephemeral=True)
-
-
-tree.add_command(grant_top_10)
-
-
 # Alternative to fancier options
-@tree.command(description="Grants rank with accounting for time. Includes #1 ranks")
+@tree.command(description="Grants rank with accounting for time. Includes #1 ranks. Can do many members at once.")
 @app_commands.checks.has_role(STAFF_ROLE_ID)
 @app_commands.checks.bot_has_permissions(manage_roles=True)
 @app_commands.describe(
-    user_id='@mention (press space at end) or ID of member to grant rank to (for ID, enable developer tools on your account)',
-    rank='Rank to grant member',
+    user_id='@mention (press space at end) or user ID of member(s) to grant rank to',
+    rank='Rank to grant member(s)',
     season_num='Which number season end (mid-season = previous season)',
     note='Miscellaneous note to attach to this record'
 )
 @app_commands.choices(rank=RANK_CHOICES)
 async def grant_rank(interaction: discord.Interaction, user_id: str, rank: app_commands.Choice[str], season_num: int,
                      note: str = ""):
-    m = re.search(r"(\d+)", user_id)
+    m = re.findall(r"(\d+)", user_id)
     if not m:
         await interaction.response.send_message("Must provide a number for user_id (may be as @mention)", ephemeral=True)
         return
-    u_id = m.groups()[0]
-    if len(u_id) < 12:
-        await interaction.response.send_message("Number received as user_id was under 12 digits (arbitrary sanity check). If this was actually correct, please enter the number padded with leading 0's.",
-                                                ephemeral=True)
-        return
-    user = interaction.guild.get_member(int(u_id))
-    if not user:
-        await interaction.response.send_message("No user found for user_id", ephemeral=True)
-        return
-    time_added = datetime.timestamp(datetime.now(timezone.utc))
-    await add_record(interaction, time_added, int(u_id), int(rank.value), season_num, note)
+    for u_id in m:
+        if len(u_id) < 12:
+            await interaction.response.send_message("Number received as user_id was under 12 digits (arbitrary sanity check). If this was actually correct, please enter the number padded with leading 0's.",
+                                                    ephemeral=True)
+            return
+        user = interaction.guild.get_member(int(u_id))
+        if not user:
+            await interaction.response.send_message("No user found for user_id", ephemeral=True)
+            return
+        time_added = datetime.timestamp(datetime.now(timezone.utc))
+        await add_record(interaction, time_added, int(u_id), int(rank.value), season_num, note)
 
 
 @tree.command(description="Show current season end date and time")
@@ -734,7 +729,7 @@ async def upload_user_ranks(interaction: discord.Interaction, file: discord.Atta
         await interaction.followup.send("No current season end stored yet. Use slash command `/set_season_end`.", ephemeral=True)
         return
     c_num, end_ts = current_end
-    time_added = datetime.timestamp(datetime.now(timezone.utc))
+    time_added = datetime.now(timezone.utc).timestamp()
     await file.save(upload_ranks_path)
     with open(upload_ranks_path, 'r') as u_r:
         ranks_upload = csv.reader(u_r)
@@ -812,6 +807,8 @@ async def upload_user_ranks(interaction: discord.Interaction, file: discord.Atta
 
 
 async def rank_reaction_add(payload: discord.RawReactionActionEvent):
+    if payload.channel_id != REQUEST_RANK_CH:
+        return
     if payload.member.get_role(STAFF_ROLE_ID):
         guild = bot.get_guild(payload.guild_id)
         author = guild.get_member(payload.message_author_id)
