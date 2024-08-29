@@ -52,11 +52,11 @@ Setting the DEBUG variable in `params.py` to `True` allows you to test the bot w
 
 The commands for roll sides and create/edit embed should be fairly self-explanatory.
 
-1. `/sides`
+1. `/sides` Anyone can use.
 
-2. `/create_embed`
+2. `/create_embed` Staff or Beamdog can use.
 
-3. `Message right-click -> Apps -> Edit embed` (context menu command)
+3. `Message right-click -> Apps -> Edit embed` (context menu command) Staff or Beamdog can use.
 
 ### Toggle showcase
 
@@ -92,7 +92,7 @@ Unless otherwise specified, Staff and only Staff role may use the following comm
 
 * `On rank react` In the request-rank channel, members post a screenshot of their profile with the rank for the season they want recorded. By reacting to this member's message with a medallion emoji, a select menu will pop up in the server-commands channel asking for which season the role should be granted.
 
-9. `/grant_rank` Invoke this anywhere to give a user a rank. This is the only way to grant #1 ranks. @mention or raw User ID may specify the user. Tip: if the member is not visible in the channel, you can get the proper @mention by pressing *space* after typing out @ and the username in full.
+9. `/grant_rank` Invoke this anywhere to give one or more users a given rank for a given season. @mention or raw User ID specifies the user. Tip: if the member is not visible in the channel, you can get the proper @mention by pressing *space* after typing out @ and the username in full. To find the User ID, you can check this Discord support article: https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID
 
 10. `/get_season_end` Any member can invoke this to check the current season end. 
 
@@ -106,7 +106,7 @@ Unless otherwise specified, Staff and only Staff role may use the following comm
 
 14. `hall_of_fame` This command group allows Staff to more easily post in hall-of-fame channel. These commands grant Hall of Fame role to all featured players. 
 
-    a. `top_10` Posts Top 10 Platinum embed for season end. If not for a just-ended season, it does not auto-grant ranks aside from Hall of Fame. 
+    a. `top_10` Posts Top 10 Platinum embed for season end. If not for a just-ended season, it does not auto-grant ranks aside from Hall of Fame. For a just-ended season, grants and records Top 10 and #1 ranks too.
 
     b. `tournament` Posts Tournament embed for Solos, Duos, or Blitz winners and finalists. The primary Champion roles are not managed by this, but the underlying Champions role is. Blitz tournament follows a dethrone policy as of 2024, so remember to manually remove the previous Blitz Champion's role, and the underlying Champion role if not champion in another tournament.
 

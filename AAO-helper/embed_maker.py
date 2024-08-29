@@ -49,13 +49,13 @@ class CreateEmbedModal(discord.ui.Modal):
 
 
 @tree.command(description="Create and send embed")
-@app_commands.checks.has_role(STAFF_ROLE_ID)
+@app_commands.checks.has_any_role(STAFF_ROLE_ID, BEAMDOG_ROLE_ID)
 @app_commands.checks.bot_has_permissions(send_messages=True)
 async def create_embed(interaction: discord.Interaction):
     await interaction.response.send_modal(CreateEmbedModal())
 
 
-@app_commands.checks.has_role(STAFF_ROLE_ID)
+@app_commands.checks.has_any_role(STAFF_ROLE_ID, BEAMDOG_ROLE_ID)
 @app_commands.checks.bot_has_permissions(send_messages=True)
 @app_commands.context_menu(name="Edit embed")
 async def edit_embed(interaction: discord.Interaction, message: discord.Message):
