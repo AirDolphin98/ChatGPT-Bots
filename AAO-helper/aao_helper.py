@@ -87,7 +87,8 @@ async def message_checks(message: discord.Message):
         await message.reply("Did you mean <@!948208421054865410>?")
 
     if re.search("aa1942calc.com/#/[a-zA-Z0-9-_]+", message.content.lower()):
-        await message.edit(suppress=True)
+        if message.embeds:
+            await message.edit(suppress=True)
 
 
 last_msgs = {}
