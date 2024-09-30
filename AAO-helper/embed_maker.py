@@ -77,7 +77,7 @@ async def edit_embed(interaction: discord.Interaction, message: discord.Message)
         image = embed.image.url if embed.image else None
         await interaction.response.send_modal(CreateEmbedModal(vals=(title, description, footer, color, image), message=message))
         if datetime.now(timezone.utc) - message.created_at > timedelta(days=1.0):
-            await interaction.guild.get_channel_or_thread(SERVER_COMM_CH).send(f"An embed older than a day was edited: {message.reference.jump_url}")
+            await interaction.guild.get_channel_or_thread(SERVER_COMM_CH).send(f"An embed older than a day was edited: {message.jump_url}")
 
 
 tree.add_command(edit_embed)

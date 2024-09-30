@@ -24,13 +24,13 @@ So far, these are the main functions of the bot:
 
 * System for granting leaderboard rank badges, storing them in a database, and updating with the ranked seasons. This is the most sophisticated functionality.
 
-* Commands that streamline the posting of typical Hall of Fame embeds and auto-managing the awarded roles to some extent
+* Commands that streamline the posting of typical Hall of Fame embeds and auto-manage the awarded roles to some extent
 
 The bot automates much of these processes and allows people who don't have perms such as manage channels/threads/roles to perform these actions.
 
 ## Setup
 
-I have set this up on a Pebblehost server. It's cheap and decent for bot hosting (as of 2024). You can link it to a GitHub repo and have it update the code upon every server restart. Note: the actual repo linked to my host currently is combined with other bots; I copy-paste files between that and this standalone aao-helper repo.
+I have set this up on a Pebblehost server. It's cheap and decent for bot hosting (as of 2024). You can link it to a GitHub repo and have it update the code upon every server restart.
 
 The main file which you run the program with is `aao_helper.py`
 
@@ -62,13 +62,13 @@ The commands for roll sides and create/edit embed should be fairly self-explanat
 
 4. `/toggle_showcase` Invoke this in a showcase channel to automatically move it either from its usual category to the CACHE category, or vice versa. Its gallery channel will be moved along with it. The channel order may need to be adjusted for presentation, but Discord does a decent job of preserving the order sometimes.
 
-Note: Finals channels are often intended to have gallery-1 channels as their gallery, but only showcase-1 channels are linked to them. Therefore, you're not supposed to archive a showcase-1 channel when a finals channel is on display.
+Note: Finals channels are often intended to have gallery-1 channels as their gallery, but only showcase-1 channels are linked to them. Therefore, you're not supposed to archive a showcase-1 channel when a finals channel is on display. There's no issue with doing that manually, however.
 
 ### Auto manage threads
 
-5. `/auto_unarchive` Invoke this in a thread to automatically unhide it when it would normally disappear from the channel list after the auto archive duration. Invoke in a channel to do this for all threads in that channel. Closed/locked threads will not be affected; auto archive does not register as archiving, it somehow only changes visibility.
+5. `/auto_unarchive` Invoke this in a thread to automatically unhide it when it would normally disappear from the channel list after the auto archive duration. Invoke in a channel to do this for all threads in that channel. Closed/locked threads will not be affected; auto archive does not register as archiving, it somehow only changes visibility. Note: if the host server restarts many times, this can clog up the Audit Log modifying threads with an old last message, so send a bump message in those threads if that's an issue.
 
-6. `/auto_close_forum_posts` Invoke this with a forum ID to have it automatically archive forum posts that have not had recent messages. Default cutoff is 14 days ago. Can also auto-lock if desired.
+6. `/auto_close_forum_posts` Invoke this with a forum ID to have it automatically archive forum posts that have not had recent messages. Default cutoff is `14` days ago. Can also auto-lock if desired.
 
 ### Exhibition match
 

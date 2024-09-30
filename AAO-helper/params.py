@@ -60,6 +60,14 @@ cur.execute(  # currently channel is expected to take a json serialized list of 
     """
 )
 conn.commit()
+"""Here's a tip on how to update a database schema: 
+Add the following after the create stmt:
+DROP TABLE table_name
+CREATE TABLE IF NOT EXISTS table name (...)
+Then run the updated code once to rewrite the db file.
+Can then update the code again with the old create stmt and the drop stmt removed for more conciseness.
+Note: this will of course delete the data in the table.
+"""
 
 txt_views_dir = "txt_views"
 if not os.path.exists(txt_views_dir):
@@ -82,6 +90,7 @@ DEBUG = False
 STAFF_ROLE_ID = 943827276104097842
 MOD_ROLE_ID = 659883868635267075
 BEAMDOG_ROLE_ID = 610480003230072833
+COMMANDERS_ROLE_ID = 941829635367378944
 SERVER_COMM_CH = 670090977356021780 #server-logs
 
 TITLE_LIMIT = 256
@@ -133,6 +142,7 @@ SHOWCASE_CHANNELS = {
 if DEBUG:
     STAFF_ROLE_ID = 1265197758449713233
     MOD_ROLE_ID = 864690035915358258
+    COMMANDERS_ROLE_ID = 940238197307367444
     SERVER_COMM_CH = 1265198095860502671
 
     ARCHIVE_CATEGORY = 975899857959141416
