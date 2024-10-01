@@ -155,7 +155,7 @@ async def push_channels_as_default(interaction: discord.Interaction, channel_ids
     categories_note = ""
     for c_id in ch_ids:
         ch = interaction.guild.get_channel(int(c_id))
-        if not ch or ch.type not in [discord.ChannelType.text, discord.ChannelType.category]:
+        if not ch or ch.type not in [discord.ChannelType.text, discord.ChannelType.forum, discord.ChannelType.category]:
             bad_chs += "\n" + c_id
             continue
         else:
